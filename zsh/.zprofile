@@ -28,3 +28,5 @@ else
 fi
 unset __conda_setup
 # # <<< conda initialize <<<
+# Created by `pipx` on 2024-07-15 02:11:54
+export PATH="$PATH:/Users/brandon/.local/bin"

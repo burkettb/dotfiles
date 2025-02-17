@@ -32,3 +32,7 @@ alias java-8="export JAVA_HOME=`/usr/libexec/java_home -v 1.8`; java -version"
 
 source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# Created by `pipx` on 2024-07-15 02:11:54
+export PATH="$PATH:/Users/brandon/.local/bin"
+export PATH="$PATH:/Users/brandon/.bin"
