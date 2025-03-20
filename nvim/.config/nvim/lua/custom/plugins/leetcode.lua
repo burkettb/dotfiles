@@ -9,5 +9,7 @@ return {
 	},
 	opts = {
 		-- configuration goes here
+		---@type lc.lang
+		lang = "python3",
 	},
 }

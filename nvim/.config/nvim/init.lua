@@ -71,6 +71,15 @@ vim.opt.scrolloff = 10
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
+-- Prevent deletions from overwriting system clipboard but still store them in register "z"
+vim.keymap.set("n", "d", '"zd', { noremap = true }) -- Store in register "z"
+vim.keymap.set("n", "x", '"zx', { noremap = true })
+vim.keymap.set("n", "c", '"zc', { noremap = true })
+
+vim.keymap.set("v", "d", '"zd', { noremap = true })
+vim.keymap.set("v", "x", '"zx', { noremap = true })
+vim.keymap.set("v", "c", '"zc', { noremap = true })
+
 -- Set highlight on search, but clear on pressing <Esc> in normal mode
 vim.opt.hlsearch = true
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
