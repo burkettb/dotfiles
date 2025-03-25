@@ -14,9 +14,20 @@ export PATH="/usr/share/code/bin:$PATH"
 # espressif idf
 alias get_idf=". $HOME/esp/esp-idf/export.sh"
 
-# conda
-# conda activate csci349
+alias ls="ls -AFp"
 
+fif() {
+	RG_PREFIX="rga --files-with-matches"
+	local file
+	file="$(
+		FZF_DEFAULT_COMMAND="$RG_PREFIX '$1'" \
+			fzf --sort --preview="[[ ! -z {} ]] && rga --pretty --context 5 {q} {}" \
+				--phony -q "$1" \
+				--bind "change:reload:$RG_PREFIX {q}" \
+				--preview-window="70%:wrap"
+	)" &&
+	nvim "$file"
+}
 # nvm
 export NVM_DIR="$HOME/.nvm"
   [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
