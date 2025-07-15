@@ -1,0 +1,157 @@
+# Aerospace configuration
+# https://github.com/nikitabobko/AeroSpace
+
+# Global settings
+start-at-login = true
+
+# Normalizations. See: https://nikitabobko.github.io/AeroSpace/guide.html#normalization
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+# Mouse follows focus when focus changes
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+
+# Default root container layout
+default-root-container-layout = 'tiles'
+
+# Default root container orientation
+default-root-container-orientation = 'auto'
+
+# Possible values: tiles|accordion
+accordion-padding = 30
+
+# Define the gaps
+[gaps]
+inner.horizontal = 10
+inner.vertical = 10
+outer.left = 10
+outer.bottom = 10
+outer.top = 10
+outer.right = 10
+
+# Define workspaces (spaces)
+# 1 = Mixed/utility apps (Spotify, Notes, Docker, Messages, Finder)
+# 2 = Main browser
+# 3 = Terminal (iTerm2)
+# 4 = Secondary browser  
+# 5 = Teams/ChatGPT
+# 6 = Meetings/open space
+
+[workspace-to-monitor-force-assignment]
+1 = 1
+2 = 1
+3 = 1
+4 = 1
+5 = 1
+6 = 1
+
+# App rules - automatically assign apps to specific workspaces
+[[on-window-detected]]
+if.app-id = 'com.spotify.client'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.Notes'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.docker.docker'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.MobileSMS'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.finder'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.google.Chrome'
+run = 'move-node-to-workspace 2'
+
+[[on-window-detected]]
+if.app-id = 'com.googlecode.iterm2'
+run = 'move-node-to-workspace 3'
+
+[[on-window-detected]]
+if.app-id = 'org.mozilla.firefox'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams2'
+run = 'move-node-to-workspace 5'
+
+[[on-window-detected]]
+if.app-id = 'com.openai.chat'
+run = 'move-node-to-workspace 5'
+
+# Mode definitions
+[mode.main.binding]
+
+# Space switching with Ctrl + Alt + number (avoids conflicts)
+ctrl-alt-1 = 'workspace 1'
+ctrl-alt-2 = 'workspace 2'
+ctrl-alt-3 = 'workspace 3'
+ctrl-alt-4 = 'workspace 4'
+ctrl-alt-5 = 'workspace 5'
+ctrl-alt-6 = 'workspace 6'
+
+# Move windows to specific workspaces
+ctrl-alt-shift-1 = 'move-node-to-workspace 1'
+ctrl-alt-shift-2 = 'move-node-to-workspace 2'
+ctrl-alt-shift-3 = 'move-node-to-workspace 3'
+ctrl-alt-shift-4 = 'move-node-to-workspace 4'
+ctrl-alt-shift-5 = 'move-node-to-workspace 5'
+ctrl-alt-shift-6 = 'move-node-to-workspace 6'
+
+# Window management
+alt-h = 'focus left'
+alt-j = 'focus down'
+alt-k = 'focus up'
+alt-l = 'focus right'
+
+# Move windows
+alt-shift-h = 'move left'
+alt-shift-j = 'move down'
+alt-shift-k = 'move up'
+alt-shift-l = 'move right'
+
+# Resize windows
+alt-ctrl-h = 'resize smart -50'
+alt-ctrl-j = 'resize smart -50'
+alt-ctrl-k = 'resize smart +50'
+alt-ctrl-l = 'resize smart +50'
+
+# Join containers (better than split with normalization enabled)
+alt-v = 'join-with down'
+alt-s = 'join-with right'
+
+# Toggle fullscreen
+alt-f = 'fullscreen'
+
+# Toggle floating
+alt-shift-space = 'layout floating tiling'
+
+# Reload configuration
+alt-shift-r = 'reload-config'
+
+# Close window
+alt-shift-q = 'close'
+
+# Find and focus any window across workspaces
+ctrl-alt-w = 'exec-and-forget aerospace-find-window'
+
+# Service mode (for window manipulation)
+alt-semicolon = 'mode service'
+
+[mode.service.binding]
+esc = ['reload-config', 'mode main']
+r = ['flatten-workspace-tree', 'mode main']
+f = ['layout floating tiling', 'mode main']
+backspace = ['close-all-windows-but-current', 'mode main']
+
+alt-shift-h = ['join-with left', 'mode main']
+alt-shift-j = ['join-with down', 'mode main']
+alt-shift-k = ['join-with up', 'mode main']
+alt-shift-l = ['join-with right', 'mode main']

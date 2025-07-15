@@ -1,0 +1,6 @@
+/Users/brandon/anaconda3
+/Users/brandon/anaconda3/envs/csci349
+/Users/brandon/anaconda3/envs/manim
+/Users/brandon/anaconda3/envs/csci349_backup
+/Users/brandon/anaconda3/envs/playertrak
+/Users/brandon/anaconda3/envs/pyqt

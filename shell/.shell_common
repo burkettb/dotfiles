@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# Common shell configuration for both bash and zsh
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+# Editor
+export EDITOR="nvim"
+export VISUAL="nvim"
+
+# Paths
+export PATH="$PATH:/Users/brandon/.local/bin"
+export PATH="$PATH:/Users/brandon/.bin"
+export PATH="/usr/share/code/bin:$PATH"
+
+# Development
+export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
+
+# NVM (Node Version Manager)
+export NVM_DIR="$HOME/.nvm"
+[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
+[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+
+# FZF
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+
+# ============================================================================
+# Aliases
+# ============================================================================
+
+# Navigation
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias ~="cd ~"
+
+# Listing
+alias ls="eza --icons --group-directories-first"
+alias ll="eza --icons --group-directories-first -la"
+alias la="eza --icons --group-directories-first -a"
+alias lt="eza --icons --group-directories-first --tree"
+alias l="ls -AFp"  # Fallback for systems without eza
+
+# Git (basics - more in gitconfig)
+alias g="git"
+alias gs="git status"
+alias gd="git diff"
+alias gdc="git diff --cached"
+alias gp="git push"
+alias gl="git pull"
+alias gco="git checkout"
+alias gcm="git commit -m"
+
+# Docker
+alias d="docker"
+alias dc="docker-compose"
+alias dps="docker ps"
+alias dpsa="docker ps -a"
+alias dimg="docker images"
+alias dex="docker exec -it"
+
+# System
+alias c="clear"
+alias h="history"
+alias reload="source ~/.zshrc"
+alias path='echo -e ${PATH//:/\\n}'
+alias ports="netstat -tulanp"
+
+# Safety nets
+alias rm="rm -i"
+alias cp="cp -i"
+alias mv="mv -i"
+alias mkdir="mkdir -pv"
+
+# Development
+alias vim="nvim"
+alias vi="nvim"
+alias v="nvim"
+alias python="python3"
+alias pip="pip3"
+alias serve="python -m http.server"
+
+# Espressif IDF
+alias get_idf=". $HOME/esp/esp-idf/export.sh"
+
+# Java versions
+alias java-17="export JAVA_HOME=`/usr/libexec/java_home -v 17`; java -version"
+alias java-8="export JAVA_HOME=`/usr/libexec/java_home -v 1.8`; java -version"
+
+# macOS specific
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    alias flush="dscacheutil -flushcache && killall -HUP mDNSResponder"
+    alias update="sudo softwareupdate -i -a; brew update; brew upgrade; brew cleanup"
+    alias showfiles="defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
+    alias hidefiles="defaults write com.apple.finder AppleShowAllFiles -bool false && killall Finder"
+    alias spotoff="sudo mdutil -a -i off"
+    alias spoton="sudo mdutil -a -i on"
+fi
+
+# ============================================================================
+# Functions
+# ============================================================================
+
+# Create directory and cd into it
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Extract various archive formats
+extract() {
+    if [ -f $1 ]; then
+        case $1 in
+            *.tar.bz2)   tar xjf $1     ;;
+            *.tar.gz)    tar xzf $1     ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       unrar e $1     ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xf $1      ;;
+            *.tbz2)      tar xjf $1     ;;
+            *.tgz)       tar xzf $1     ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7z x $1        ;;
+            *)           echo "'$1' cannot be extracted via extract()" ;;
+        esac
+    else
+        echo "'$1' is not a valid file"
+    fi
+}
+
+# Find in files with ripgrep and fzf
+fif() {
+    RG_PREFIX="rga --files-with-matches --hidden --glob '!.git/*' --glob '!node_modules/*'"
+    local file
+    file="$(
+        FZF_DEFAULT_COMMAND="$RG_PREFIX '$1'" \
+            fzf-tmux --sort --preview="[[ ! -z {} ]] && rga --hidden --pretty --context 5 {q} {}" \
+                --phony -q "$1" \
+                --bind "change:reload:$RG_PREFIX {q}" \
+                --preview-window="70%:wrap"
+    )" &&
+    nvim "$file"
+}
+
+# Git branch fuzzy finder
+fbr() {
+    local branches branch
+    branches=$(git branch --all | grep -v HEAD) &&
+    branch=$(echo "$branches" |
+           fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+    git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
+}
+
+# Kill process using fzf
+fkill() {
+    local pid
+    pid=$(ps -ef | sed 1d | fzf -m | awk '{print $2}')
+    
+    if [ "x$pid" != "x" ]; then
+        echo $pid | xargs kill -${1:-9}
+    fi
+}
+
+# Quick notes
+note() {
+    local notes_dir="$HOME/notes"
+    mkdir -p "$notes_dir"
+    
+    if [ $# -eq 0 ]; then
+        nvim "$notes_dir/$(date +%Y-%m-%d).md"
+    else
+        nvim "$notes_dir/$1.md"
+    fi
+}
+
+# Quick backup
+backup() {
+    cp "$1" "$1.backup.$(date +%Y%m%d_%H%M%S)"
+}
+
+# Weather
+weather() {
+    curl "wttr.in/${1:-}"
+}
+
+# Cheat sheet
+cheat() {
+    curl "cheat.sh/$1"
+}
+
+# Source machine-specific shell configuration if it exists
+[ -f ~/.shell_local ] && source ~/.shell_local

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# Parse SSH config to find hosts
+parse_ssh_hosts() {
+    # Get hosts from SSH config files
+    ssh_config_files=(
+        "$HOME/.ssh/config"
+        "/etc/ssh/ssh_config"
+    )
+    
+    local hosts=()
+    
+    for config_file in "${ssh_config_files[@]}"; do
+        if [[ -f "$config_file" ]]; then
+            # Extract Host entries, excluding wildcards and comments
+            while IFS= read -r line; do
+                if [[ $line =~ ^[[:space:]]*Host[[:space:]]+([^*#]+) ]]; then
+                    host="${BASH_REMATCH[1]}"
+                    # Clean up whitespace and split multiple hosts
+                    for h in $host; do
+                        if [[ ! "$h" =~ [\*\?] ]]; then  # Exclude wildcards
+                            hosts+=("$h")
+                        fi
+                    done
+                fi
+            done < "$config_file"
+        fi
+    done
+    
+    # Remove duplicates and sort
+    printf '%s\n' "${hosts[@]}" | sort -u
+}
+
+# Function to setup SSH session with proper window behavior
+setup_ssh_session() {
+    local host=$1
+    local session_name=$2
+    
+    # Set session environment variable for the SSH host
+    tmux set-environment -t "$session_name" SSH_DEFAULT_HOST "$host"
+    
+    # Create a hook that automatically SSH's into the host for new windows
+    tmux set-hook -t "$session_name" after-new-window "send-keys 'ssh $host' Enter"
+    
+    # Set the default command for new panes in this session
+    tmux set-option -t "$session_name" default-command "ssh $host"
+    
+    # Set window name format to show the SSH host
+    tmux set-option -t "$session_name" automatic-rename off
+    tmux set-option -t "$session_name" allow-rename off
+    
+    # Rename the first window to show it's SSH
+    tmux rename-window -t "$session_name:1" "$host"
+}
+
+# Main logic
+if [[ $# -eq 1 ]]; then
+    selected=$1
+else
+    # Get SSH hosts and let user select with fzf
+    hosts=$(parse_ssh_hosts)
+    if [[ -z "$hosts" ]]; then
+        echo "No SSH hosts found in ~/.ssh/config"
+        exit 1
+    fi
+    
+    selected=$(echo "$hosts" | fzf --prompt="SSH Host: " --height=40% --border)
+fi
+
+if [[ -z $selected ]]; then
+    exit 0
+fi
+
+# Create session name (prefix with 'ssh-' to distinguish from regular sessions)
+session_name="ssh-$(echo "$selected" | tr . _)"
+tmux_running=$(pgrep tmux)
+
+# Check if we're outside tmux and tmux isn't running
+if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
+    tmux new-session -s "$session_name" -d
+    setup_ssh_session "$selected" "$session_name"
+    tmux send-keys -t "$session_name" "ssh $selected" Enter
+    tmux attach-session -t "$session_name"
+    exit 0
+fi
+
+# Check if session already exists
+if ! tmux has-session -t="$session_name" 2> /dev/null; then
+    tmux new-session -ds "$session_name"
+    setup_ssh_session "$selected" "$session_name"
+    tmux send-keys -t "$session_name" "ssh $selected" Enter
+fi
+
+tmux switch-client -t "$session_name"
