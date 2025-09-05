@@ -38,11 +38,47 @@ alias ....="cd ../../.."
 alias ~="cd ~"
 
 # Listing
-alias ls="eza --icons --group-directories-first"
-alias ll="eza --icons --group-directories-first -la"
-alias la="eza --icons --group-directories-first -a"
+# Smart ls wrapper that translates common ls patterns to eza
+ls() {
+    case "$*" in
+        "")
+            # Plain ls - use eza with icons
+            eza --icons --group-directories-first
+            ;;
+        "-lsa"|"-las"|"-als"|"-asl"|"-sal"|"-sla")
+            # ls -lsa (all files with details, including . and ..)
+            eza --icons --group-directories-first -la --total-size
+            ;;
+        "-ltrh"|"-lthr"|"-lrth"|"-lhrt"|"-lhtr"|"-lrht")
+            # ls -ltrh (long, time sorted, reverse, human readable)
+            eza --icons --group-directories-first -l --sort=modified -r
+            ;;
+        "-la"|"-al")
+            # ls -la (all files with details)
+            eza --icons --group-directories-first -la
+            ;;
+        "-l")
+            # ls -l (long format)
+            eza --icons --group-directories-first -l
+            ;;
+        "-a")
+            # ls -a (show hidden)
+            eza --icons --group-directories-first -a
+            ;;
+        *)
+            # For any other combination, try eza first, fall back to real ls if it fails
+            eza --icons --group-directories-first "$@" 2>/dev/null || command ls "$@"
+            ;;
+    esac
+}
+
+# Aliases (optional, but keeping for compatibility)
+alias ll="ls -la"
+alias la="ls -a"
 alias lt="eza --icons --group-directories-first --tree"
-alias l="ls -AFp"  # Fallback for systems without eza
+
+# Escape hatch for when you need real ls
+alias lls="command ls"       # Use real ls explicitly
 
 # Git (basics - more in gitconfig)
 alias g="git"
