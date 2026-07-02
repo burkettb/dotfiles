@@ -14,8 +14,9 @@ brew install chezmoi
 chezmoi init --source ~/.dotfiles --apply git@github.com:Brandon-Burkett/dotfiles.git
 # You'll be prompted for: machine type (personal/work) and git email
 
-# 3. Install everything else
-brew bundle --file ~/.dotfiles/Brewfile
+# 3. Install everything else (~/.Brewfile is rendered by chezmoi,
+#    with personal-only apps excluded on work machines)
+brew bundle --global
 
 # 4. Install tmux plugin manager, then prefix + I inside tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
@@ -58,7 +59,7 @@ Two mechanisms:
 | `dot_config/private_atuin/` | `~/.config/atuin` | shell history sync |
 | `dot_claude/` | `~/.claude/settings.json` | Claude Code settings |
 | `dot_editorconfig` | `~/.editorconfig` | applies to everything under `~` |
-| `Brewfile` | — | `brew bundle --file ~/.dotfiles/Brewfile` |
+| `dot_Brewfile.tmpl` | `~/.Brewfile` | `brew bundle --global`; personal-only casks are templated out on work machines |
 | `iterm2/` | — | exported iTerm2 profile/settings JSON, import manually |
 
 ## Troubleshooting

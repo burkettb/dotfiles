@@ -1,6 +1,5 @@
 # Repo-level files that should never be applied to $HOME
 README.md
-Brewfile
 docs
 iterm2
 

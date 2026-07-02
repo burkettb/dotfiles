@@ -1,3 +1,6 @@
+# Rendered by chezmoi to ~/.Brewfile — run with: brew bundle --global
+# Shared (all machines) first, machine-specific sections at the bottom.
+
 # Taps
 tap "homebrew/services"
 
@@ -28,6 +31,14 @@ brew "go"
 brew "rust"
 brew "docker"
 brew "docker-compose"
+
+# Infrastructure / ops
+brew "ansible"
+brew "awscli"
+brew "bitwarden-cli"
+brew "caddy"
+brew "dnsmasq"
+brew "terraform"
 
 # Language servers and formatters (for Neovim)
 brew "lua-language-server"
@@ -70,7 +81,9 @@ cask "iterm2"
 cask "kitty"
 cask "linearmouse"
 cask "visual-studio-code"
-# Note: Docker Desktop should be installed manually from docker.com
+cask "codex"
+cask "docker-desktop"
+cask "zulu@8"               # JDK 8 (java-8 alias)
 cask "spotify"
 cask "bitwarden"
 cask "firefox"
@@ -80,3 +93,19 @@ cask "google-chrome"
 cask "font-jetbrains-mono-nerd-font"
 cask "font-fira-code-nerd-font"
 cask "font-meslo-lg-nerd-font"
+{{- if eq .machine "personal" }}
+
+# ============================================================================
+# Personal machine only
+# ============================================================================
+cask "anki"
+cask "db-browser-for-sqlite"
+cask "discord"
+cask "dropbox"
+cask "figma"
+cask "gimp"
+cask "mactex-no-gui"
+cask "notion"
+cask "obs"
+cask "zoom"
+{{- end }}
