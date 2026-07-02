@@ -1,10 +1,9 @@
 # Taps
 tap "homebrew/services"
-tap "nikitabobko/tap"
 
 # Core tools
 brew "git"
-brew "stow"
+brew "chezmoi"
 brew "zsh"
 brew "tmux"
 brew "neovim"
@@ -67,10 +66,10 @@ brew "trash"               # Move to trash instead of rm
 
 # Casks (GUI applications)
 cask "iterm2"
+cask "kitty"
 cask "visual-studio-code"
 # Note: Docker Desktop should be installed manually from docker.com
 cask "spotify"
-cask "nikitabobko/tap/aerospace"  # Modern tiling window manager
 cask "bitwarden"
 cask "firefox"
 cask "google-chrome"
