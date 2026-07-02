@@ -14,9 +14,10 @@ source $(brew --prefix)/share/powerlevel10k/powerlevel10k.zsh-theme
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-# ZSH plugins
-source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+# Completions (includes Docker CLI completions if present)
+[[ -d "$HOME/.docker/completions" ]] && fpath=("$HOME/.docker/completions" $fpath)
+autoload -Uz compinit
+compinit
 
 # FZF integration
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
@@ -26,8 +27,7 @@ eval "$(zoxide init zsh)"
 
 # Atuin (better shell history)
 [[ -f /opt/homebrew/bin/atuin ]] && eval "$(atuin init zsh)"
-# The following lines have been added by Docker Desktop to enable Docker CLI completions.
-fpath=(/Users/brandon/.docker/completions $fpath)
-autoload -Uz compinit
-compinit
-# End of Docker CLI completions
+
+# ZSH plugins (syntax highlighting must be sourced last)
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

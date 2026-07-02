@@ -14,10 +14,11 @@ export LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}
 export EDITOR="nvim"
 export VISUAL="nvim"
 
+# Go
+export GOPATH="$HOME/dev/go"
+
 # Paths
-export PATH="$PATH:/Users/brandon/.local/bin"
-export PATH="$PATH:/Users/brandon/.bin"
-export PATH="/usr/share/code/bin:$PATH"
+export PATH="$PATH:$HOME/.local/bin"
 export PATH="$PATH:$GOPATH/bin"
 
 # Development
@@ -27,9 +28,6 @@ export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
 export NVM_DIR="$HOME/.nvm"
 [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
 [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
-
-# Go
-export GOPATH="$HOME/dev/go"
 
 # FZF
 export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
