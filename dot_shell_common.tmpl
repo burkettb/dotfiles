@@ -233,5 +233,14 @@ cheat() {
     curl "cheat.sh/$1"
 }
 
-# Source machine-specific shell configuration if it exists
+# ============================================================================
+# Machine-specific configuration
+# ============================================================================
+{{- if eq .machine "work" }}
+
+# Work machine
+# (work-only aliases, VPN helpers, proxy settings, etc. go here)
+{{- end }}
+
+# Untracked escape hatch for anything that shouldn't live in the repo
 [ -f ~/.shell_local ] && source ~/.shell_local

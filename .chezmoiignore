@@ -1,0 +1,9 @@
+# Repo-level files that should never be applied to $HOME
+README.md
+Brewfile
+docs
+iterm2
+
+# nvim config lives in the repo and is applied as a symlink
+# (see dot_config/symlink_nvim.tmpl) so edits are instant
+nvim

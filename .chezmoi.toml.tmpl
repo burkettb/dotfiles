@@ -1,0 +1,8 @@
+{{- $machine := promptStringOnce . "machine" "machine (personal/work)" -}}
+{{- $email := promptStringOnce . "email" "git email" -}}
+
+sourceDir = "{{ .chezmoi.homeDir }}/.dotfiles"
+
+[data]
+    machine = {{ $machine | quote }}
+    email = {{ $email | quote }}
