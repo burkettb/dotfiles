@@ -18,6 +18,7 @@ export VISUAL="nvim"
 export PATH="$PATH:/Users/brandon/.local/bin"
 export PATH="$PATH:/Users/brandon/.bin"
 export PATH="/usr/share/code/bin:$PATH"
+export PATH="$PATH:$GOPATH/bin"
 
 # Development
 export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
@@ -26,6 +27,9 @@ export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
 export NVM_DIR="$HOME/.nvm"
 [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
 [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+
+# Go
+export GOPATH="$HOME/dev/go"
 
 # FZF
 export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
@@ -199,7 +203,7 @@ fbr() {
 fkill() {
     local pid
     pid=$(ps -ef | sed 1d | fzf -m | awk '{print $2}')
-    
+
     if [ "x$pid" != "x" ]; then
         echo $pid | xargs kill -${1:-9}
     fi
@@ -209,7 +213,6 @@ fkill() {
 note() {
     local notes_dir="$HOME/notes"
     mkdir -p "$notes_dir"
-    
     if [ $# -eq 0 ]; then
         nvim "$notes_dir/$(date +%Y-%m-%d).md"
     else

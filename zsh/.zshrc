@@ -26,3 +26,8 @@ eval "$(zoxide init zsh)"
 
 # Atuin (better shell history)
 [[ -f /opt/homebrew/bin/atuin ]] && eval "$(atuin init zsh)"
+# The following lines have been added by Docker Desktop to enable Docker CLI completions.
+fpath=(/Users/brandon/.docker/completions $fpath)
+autoload -Uz compinit
+compinit
+# End of Docker CLI completions
