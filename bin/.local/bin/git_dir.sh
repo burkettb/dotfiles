@@ -1,12 +1,12 @@
 #!/bin/bash
 # Directory containing all your projects
-PROJECTS_DIR="$HOME/projects"  # adjust as needed
+PROJECTS_DIR="$HOME/dev"  # adjust as needed
 
 # Iterate through each subdirectory in the projects folder
 for repo_dir in "$PROJECTS_DIR"/*/; do
     # Remove trailing slash and get the base directory name
     base_repo_dir=$(basename "${repo_dir}")
-    
+
     if [ -d "${repo_dir}/.git" ]; then
         # Change to the repo directory
         cd "${repo_dir}" || continue
