@@ -22,6 +22,31 @@ brew bundle --global
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ```
 
+## Migrating a machine that still uses the old stow setup
+
+The work machine has stow symlinks pointing at the old repo layout; they'll
+dangle after pulling. One-time fix:
+
+```bash
+cd ~/.dotfiles && git pull
+brew install chezmoi
+
+# Remove the old stow symlinks (files only — leaves real files alone)
+/bin/rm -f ~/.editorconfig ~/.gitconfig ~/.gitignore_global ~/.p10k.zsh \
+  ~/.shell_common ~/.shell_local.example ~/.tmux-sessionizer-dirs ~/.tmux.conf \
+  ~/.zshrc ~/.zprofile ~/.config/nvim ~/.config/iterm2 \
+  ~/.local/bin/git_dir.sh ~/.local/bin/tmux-sessionizer \
+  ~/.local/bin/tmux-ssh-sessionizer ~/.local/bin/tmux-windowizer
+
+# Point chezmoi at the repo and apply (answer: machine=work, work git email)
+chezmoi init --source ~/.dotfiles --apply
+
+brew bundle --global   # personal-only apps are excluded automatically
+brew uninstall stow
+```
+
+Then restart the terminal. Machine-specific extras still go in `~/.shell_local`.
+
 ## Daily usage
 
 | Task | Command |
