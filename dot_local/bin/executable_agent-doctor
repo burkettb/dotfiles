@@ -1,0 +1,93 @@
+#!/bin/zsh
+
+set -u
+
+failures=0
+warnings=0
+
+pass() { printf 'PASS  %s\n' "$1"; }
+fail() { printf 'FAIL  %s\n' "$1"; failures=$((failures + 1)); }
+warn() { printf 'WARN  %s\n' "$1"; warnings=$((warnings + 1)); }
+
+require_command() {
+  if command -v "$1" >/dev/null 2>&1; then
+    pass "$1 is installed"
+  else
+    fail "$1 is not installed"
+  fi
+}
+
+for command_name in chezmoi jq rg git codex claude devcenter; do
+  require_command "$command_name"
+done
+
+if chezmoi_status=$(chezmoi status 2>/dev/null); then
+  if [[ -z "$chezmoi_status" ]]; then
+    pass 'chezmoi source and home state agree'
+  else
+    warn 'chezmoi reports drift'
+    printf '%s\n' "$chezmoi_status"
+  fi
+else
+  fail 'chezmoi status failed'
+fi
+
+if jq empty "$HOME/.claude/settings.json" >/dev/null 2>&1; then
+  pass 'Claude settings are valid JSON'
+else
+  fail 'Claude settings are invalid JSON'
+fi
+
+if codex --help >/dev/null 2>&1; then
+  pass 'Codex accepts the managed config'
+else
+  fail 'Codex rejected the managed config'
+fi
+
+if claude --settings "$HOME/.claude/settings.json" --version >/dev/null 2>&1; then
+  pass 'Claude accepts the managed settings'
+else
+  fail 'Claude rejected the managed settings'
+fi
+
+for required_file in \
+  "$HOME/.codex/AGENTS.md" \
+  "$HOME/.codex/config.toml" \
+  "$HOME/.claude/CLAUDE.md" \
+  "$HOME/.claude/settings.json"; do
+  if [[ -f "$required_file" ]]; then
+    pass "$required_file exists"
+  else
+    fail "$required_file is missing"
+  fi
+done
+
+if rg -q 'default_permissions = "safe-workspace"' "$HOME/.codex/config.toml" && \
+   rg -q '"disableBypassPermissionsMode": "disable"' "$HOME/.claude/settings.json"; then
+  pass 'permission hardening is present'
+else
+  fail 'permission hardening is missing'
+fi
+
+if rg -q 'github_pat_|ghp_[A-Za-z0-9]|ctx7sk-|BEGIN .*PRIVATE KEY' \
+  "$HOME/.codex/config.toml" "$HOME/.claude/settings.json"; then
+  fail 'a plaintext credential pattern was found in managed agent config'
+else
+  pass 'no known plaintext credential patterns found'
+fi
+
+if [[ "$(stat -f '%Lp' "$HOME/.codex/config.toml" 2>/dev/null)" == '600' ]] && \
+   [[ "$(stat -f '%Lp' "$HOME/.claude/settings.json" 2>/dev/null)" == '600' ]]; then
+  pass 'private agent configs are mode 0600'
+else
+  fail 'private agent configs are not mode 0600'
+fi
+
+if devcenter_home=$(devcenter home 2>/dev/null) && [[ -n "$devcenter_home" ]]; then
+  pass "DevCenter home: $devcenter_home"
+else
+  warn 'DevCenter home is not configured'
+fi
+
+printf '\n%d failure(s), %d warning(s)\n' "$failures" "$warnings"
+(( failures == 0 ))

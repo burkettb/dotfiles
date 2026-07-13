@@ -1,0 +1,79 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+for command_name in chezmoi jq codex claude; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    printf 'Missing required command: %s\n' "$command_name" >&2
+    exit 1
+  fi
+done
+
+claude_plugins=(
+  'claude-code-setup@claude-plugins-official'
+  'claude-md-management@claude-plugins-official'
+  'code-review@claude-plugins-official'
+  'code-simplifier@claude-plugins-official'
+  'commit-commands@claude-plugins-official'
+  'context7@claude-plugins-official'
+  'frontend-design@claude-plugins-official'
+  'github@claude-plugins-official'
+  'playwright@claude-plugins-official'
+  'security-guidance@claude-plugins-official'
+  'typescript-lsp@claude-plugins-official'
+  'codex@openai-codex'
+)
+
+installed_claude=$(claude plugin list --json)
+for plugin in "${claude_plugins[@]}"; do
+  if jq -e --arg plugin "$plugin" 'map(.id) | index($plugin) != null' <<<"$installed_claude" >/dev/null; then
+    printf 'Claude plugin already installed: %s\n' "$plugin"
+  else
+    claude plugin install --scope user "$plugin"
+  fi
+  claude plugin enable "$plugin" >/dev/null 2>&1 || true
+done
+
+for plugin in \
+  'feature-dev@claude-plugins-official' \
+  'explanatory-output-style@claude-plugins-official' \
+  'ralph-loop@claude-plugins-official' \
+  'pr-review-toolkit@claude-plugins-official' \
+  'vercel@claude-plugins-official' \
+  'supabase@claude-plugins-official'; do
+  claude plugin disable "$plugin" >/dev/null 2>&1 || true
+done
+
+codex_plugins=(
+  'build-ios-apps@openai-curated'
+  'github@openai-curated'
+  'build-web-apps@openai-curated'
+  'cloudflare@openai-curated'
+  'documents@openai-primary-runtime'
+  'spreadsheets@openai-primary-runtime'
+  'presentations@openai-primary-runtime'
+  'chrome@openai-bundled'
+  'computer-use@openai-bundled'
+  'pdf@openai-primary-runtime'
+  'template-creator@openai-primary-runtime'
+  'sites@openai-bundled'
+  'visualize@openai-bundled'
+  'browser@openai-bundled'
+)
+
+installed_codex=$(codex plugin list --json)
+for plugin in "${codex_plugins[@]}"; do
+  if jq -e --arg plugin "$plugin" '.installed | map(.pluginId) | index($plugin) != null' <<<"$installed_codex" >/dev/null; then
+    printf 'Codex plugin already installed: %s\n' "$plugin"
+  else
+    codex plugin add "$plugin"
+  fi
+done
+
+chezmoi apply "$HOME/.codex/config.toml" "$HOME/.claude/settings.json"
+
+if command -v agent-doctor >/dev/null 2>&1; then
+  agent-doctor
+else
+  printf 'Bootstrap complete. Restart Codex and Claude, then run agent-doctor.\n'
+fi

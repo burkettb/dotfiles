@@ -1,7 +1,101 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "attribution": {
     "commit": "",
     "pr": ""
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "disableBypassPermissionsMode": "disable",
+    "ask": [
+      "Bash(git push *)",
+      "Bash(gh pr merge *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean -f *)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(terraform apply *)",
+      "Bash(terraform destroy *)",
+      "Bash(kubectl apply *)",
+      "Bash(kubectl delete *)",
+      "Bash(kubectl patch *)",
+      "Bash(helm upgrade *)",
+      "Bash(helm uninstall *)",
+      "Bash(npm publish *)",
+      "Bash(cargo publish *)"
+    ],
+    "deny": [
+      "Read(//**/.env)",
+      "Read(//**/.env.*)",
+      "Read(//**/secrets/**)",
+      "Read(//**/.secrets/**)",
+      "Read(//**/credentials/**)",
+      "Read(//**/.npmrc)",
+      "Read(//**/.pypirc)",
+      "Read(//**/.netrc)",
+      "Read(//**/.git-credentials)",
+      "Read(//**/*.pem)",
+      "Read(//**/*.key)",
+      "Read(//**/*.p12)",
+      "Read(//**/*.pfx)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.docker/config.json)",
+      "Read(~/Library/Keychains/**)",
+      "Agent(codex-rescue)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": true,
+    "credentials": {
+      "files": [
+        { "path": "~/.ssh", "mode": "deny" },
+        { "path": "~/.aws", "mode": "deny" },
+        { "path": "~/.gnupg", "mode": "deny" },
+        { "path": "~/.kube", "mode": "deny" },
+        { "path": "~/.config/gcloud", "mode": "deny" },
+        { "path": "~/.config/gh/hosts.yml", "mode": "deny" },
+        { "path": "~/.docker/config.json", "mode": "deny" },
+        { "path": "~/Library/Keychains", "mode": "deny" }
+      ],
+      "envVars": [
+        { "name": "ANTHROPIC_API_KEY", "mode": "deny" },
+        { "name": "OPENAI_API_KEY", "mode": "deny" },
+        { "name": "GITHUB_TOKEN", "mode": "deny" },
+        { "name": "GH_TOKEN", "mode": "deny" },
+        { "name": "AWS_ACCESS_KEY_ID", "mode": "deny" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "mode": "deny" },
+        { "name": "AWS_SESSION_TOKEN", "mode": "deny" },
+        { "name": "CLOUDFLARE_API_TOKEN", "mode": "deny" },
+        { "name": "VERCEL_TOKEN", "mode": "deny" },
+        { "name": "NPM_TOKEN", "mode": "deny" },
+        { "name": "PYPI_TOKEN", "mode": "deny" },
+        { "name": "DATABASE_URL", "mode": "deny" },
+        { "name": "POSTGRES_URL", "mode": "deny" },
+        { "name": "REDIS_URL", "mode": "deny" }
+      ]
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devcenter >/dev/null && devcenter ensure || true",
+            "timeout": 30,
+            "statusMessage": "Checking DevCenter sidecar"
+          }
+        ]
+      }
+    ]
   },
   "enabledPlugins": {
     "claude-code-setup@claude-plugins-official": true,
@@ -10,17 +104,18 @@
     "code-simplifier@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
     "context7@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "explanatory-output-style@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": false,
+    "explanatory-output-style@claude-plugins-official": false,
     "frontend-design@claude-plugins-official": true,
     "github@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
-    "ralph-loop@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": false,
     "vercel@claude-plugins-official": false,
     "typescript-lsp@claude-plugins-official": true,
     "supabase@claude-plugins-official": false,
     "security-guidance@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true
+    "pr-review-toolkit@claude-plugins-official": false,
+    "codex@openai-codex": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -28,7 +123,14 @@
         "source": "github",
         "repo": "anthropics/claude-plugins-official"
       }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/openai/codex-plugin-cc.git"
+      }
     }
   },
+  "skipWorkflowUsageWarning": true,
   "agentPushNotifEnabled": true
 }

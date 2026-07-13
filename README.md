@@ -20,6 +20,10 @@ brew bundle --global
 
 # 4. Install tmux plugin manager, then prefix + I inside tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
+# 5. Install the managed agent plugins and verify the setup
+agent-bootstrap
+agent-doctor
 ```
 
 ## Migrating a machine that still uses the old stow setup
@@ -56,6 +60,8 @@ Then restart the terminal. Machine-specific extras still go in `~/.shell_local`.
 | Track a new dotfile | `chezmoi add ~/.foo` |
 | See unapplied changes | `chezmoi diff` / `chezmoi status` |
 | Pull + apply on another machine | `chezmoi update` |
+| Install/repair agent plugins | `agent-bootstrap` |
+| Verify agent configuration | `agent-doctor` |
 
 Commit and push from `~/.dotfiles` like any normal git repo.
 
@@ -82,7 +88,9 @@ Two mechanisms:
 | `dot_local/bin/executable_*` | `~/.local/bin/*` | tmux-sessionizer and friends |
 | `dot_config/kitty/` | `~/.config/kitty` | kitty terminal |
 | `dot_config/private_atuin/` | `~/.config/atuin` | shell history sync |
-| `dot_claude/` | `~/.claude/settings.json` | Claude Code settings |
+| `dot_codex/` | `~/.codex/AGENTS.md`, `~/.codex/config.toml` | Codex defaults, permissions, MCP, and plugins |
+| `dot_claude/` | `~/.claude/CLAUDE.md`, `~/.claude/settings.json` | Claude defaults, permissions, hooks, and plugins |
+| `dot_local/bin/executable_agent-*` | `~/.local/bin/agent-*` | Agent bootstrap and health checks |
 | `dot_editorconfig` | `~/.editorconfig` | applies to everything under `~` |
 | `dot_Brewfile.tmpl` | `~/.Brewfile` | `brew bundle --global`; personal-only casks are templated out on work machines |
 | `iterm2/` | — | exported iTerm2 profile/settings JSON, import manually |
@@ -93,3 +101,14 @@ Two mechanisms:
 - **Neovim LSP issues** — `:LspInfo` and `:Mason` inside nvim
 - **A file looks stale** — `chezmoi diff` shows drift between repo and home;
   `chezmoi apply` pushes repo → home, `chezmoi re-add` pulls home → repo
+
+## Agent configuration
+
+The dotfiles repository is the source of truth for global Codex and Claude
+instructions, hardened permissions, and plugin declarations. DevCenter remains
+the source of truth for per-project memory and
+standards; its home path is intentionally machine-local.
+
+Never commit credentials, OAuth state, API keys, or `.env` contents here.
+Agent configuration references environment-variable names only. Use Keychain or
+`~/.shell_local` for actual values.

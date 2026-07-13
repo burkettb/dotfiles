@@ -2,6 +2,9 @@
 README.md
 docs
 iterm2
+AGENTS.md
+CLAUDE.md
+.devcenter
 
 # nvim config lives in the repo and is applied as a symlink
 # (see dot_config/symlink_nvim.tmpl) so edits are instant
