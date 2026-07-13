@@ -90,7 +90,6 @@ Two mechanisms:
 | `dot_config/private_atuin/` | `~/.config/atuin` | shell history sync |
 | `dot_codex/` | `~/.codex/AGENTS.md`, `~/.codex/config.toml` | Codex defaults, permissions, MCP, and plugins |
 | `dot_claude/` | `~/.claude/CLAUDE.md`, `~/.claude/settings.json` | Claude defaults, permissions, hooks, and plugins |
-| `dot_agents/skills/` | `~/.agents/skills/` | Shared personal skills; Claude symlinks to these |
 | `dot_local/bin/executable_agent-*` | `~/.local/bin/agent-*` | Agent bootstrap and health checks |
 | `dot_editorconfig` | `~/.editorconfig` | applies to everything under `~` |
 | `dot_Brewfile.tmpl` | `~/.Brewfile` | `brew bundle --global`; personal-only casks are templated out on work machines |
@@ -106,13 +105,9 @@ Two mechanisms:
 ## Agent configuration
 
 The dotfiles repository is the source of truth for global Codex and Claude
-instructions, hardened permissions, plugin declarations, and portable personal
-skills. DevCenter remains the source of truth for per-project memory and
+instructions, hardened permissions, and plugin declarations. DevCenter remains
+the source of truth for per-project memory and
 standards; its home path is intentionally machine-local.
-
-`~/.agents/skills/slate-design-system` is the canonical Slate skill. Claude's
-skill path is a managed symlink to the same directory, so the two tools cannot
-drift.
 
 Never commit credentials, OAuth state, API keys, or `.env` contents here.
 Agent configuration references environment-variable names only. Use Keychain or

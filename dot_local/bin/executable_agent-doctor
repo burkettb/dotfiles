@@ -54,21 +54,13 @@ for required_file in \
   "$HOME/.codex/AGENTS.md" \
   "$HOME/.codex/config.toml" \
   "$HOME/.claude/CLAUDE.md" \
-  "$HOME/.claude/settings.json" \
-  "$HOME/.agents/skills/slate-design-system/SKILL.md"; do
+  "$HOME/.claude/settings.json"; do
   if [[ -f "$required_file" ]]; then
     pass "$required_file exists"
   else
     fail "$required_file is missing"
   fi
 done
-
-if [[ -L "$HOME/.claude/skills/slate-design-system" ]] && \
-   [[ "$(readlink "$HOME/.claude/skills/slate-design-system")" == '../../.agents/skills/slate-design-system' ]]; then
-  pass 'Claude Slate skill points to the shared skill'
-else
-  fail 'Claude Slate skill link is missing or incorrect'
-fi
 
 if rg -q 'default_permissions = "safe-workspace"' "$HOME/.codex/config.toml" && \
    rg -q '"disableBypassPermissionsMode": "disable"' "$HOME/.claude/settings.json"; then
