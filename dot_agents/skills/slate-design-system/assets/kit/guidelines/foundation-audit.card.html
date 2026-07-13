@@ -1,0 +1,296 @@
+<!-- @dsCard group="Foundations" viewport="1180x2400" name="Foundation Audit" subtitle="Type scale, component states & new primitives — locked foundation" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Slate — Foundation Audit</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--surface-muted); color: var(--text-primary); }
+  .page { max-width: 1180px; margin: 0 auto; padding: var(--space-10) var(--space-8) var(--space-20); }
+  .doc-head { margin-bottom: var(--space-10); }
+  .eyebrow { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-caps);
+    text-transform: uppercase; color: var(--accent); margin: 0 0 var(--space-3); }
+  .doc-head h1 { margin: 0 0 var(--space-3); }
+  .doc-head p { margin: 0; max-width: 62ch; color: var(--text-secondary); }
+
+  section { margin-top: var(--space-12); }
+  .sec-head { display: flex; align-items: baseline; gap: var(--space-3); padding-bottom: var(--space-3);
+    margin-bottom: var(--space-6); border-bottom: 1px solid var(--border); }
+  .sec-head h2 { margin: 0; }
+  .sec-head .num { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text-muted); }
+  .sec-head .status { margin-left: auto; }
+
+  .panel { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-card); }
+  .panel + .panel { margin-top: var(--space-4); }
+  .panel__label { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.03em;
+    text-transform: uppercase; color: var(--text-muted); padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--border); }
+  .panel__body { padding: var(--space-6); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+  .col { display: flex; flex-direction: column; gap: var(--space-4); }
+  .note { font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-2) 0 0; }
+
+  /* type scale rows */
+  .type-row { display: flex; align-items: baseline; gap: var(--space-6); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+  .type-row:last-child { border-bottom: none; }
+  .type-row .meta { flex: none; width: 132px; font-family: var(--font-mono); font-size: var(--text-xs);
+    color: var(--text-muted); line-height: 1.5; }
+  .type-row .meta b { display: block; color: var(--text-secondary); font-weight: var(--weight-semibold); }
+  .type-row .spec { color: var(--text-primary); }
+</style>
+</head>
+<body>
+<div class="page" id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds_bundle.js"></script>
+<script type="text/babel">
+const {
+  Button, Badge, Tag, Avatar, AvatarGroup,
+  Input, Textarea, Select, Checkbox, Radio, Switch,
+  Alert, Toast, Skeleton, EmptyState, Card
+} = window.SlateDesignSystem_59ffb3;
+
+function Sec({ n, title, status, statusTone, children }) {
+  return (
+    <section>
+      <div className="sec-head">
+        <span className="num">{n}</span>
+        <h2 className="sds-type-h3">{title}</h2>
+        {status && <span className="status"><Badge tone={statusTone} dot>{status}</Badge></span>}
+      </div>
+      {children}
+    </section>
+  );
+}
+function Panel({ label, children }) {
+  return <div className="panel">{label && <div className="panel__label">{label}</div>}<div className="panel__body">{children}</div></div>;
+}
+
+const TYPE_ROLES = [
+  ['Display', 'sds-type-display', '79 / 800 / -0.02em', 'Get invoices paid'],
+  ['H1', 'sds-type-h1', '44 / 700 / -0.02em', 'Page title'],
+  ['H2', 'sds-type-h2', '33 / 700 / -0.02em', 'Section heading'],
+  ['H3', 'sds-type-h3', '25 / 600', 'Subsection heading'],
+  ['H4', 'sds-type-h4', '19 / 600', 'Card title'],
+  ['Body Large', 'sds-type-body-lg', '16 / 400 / 1.6', 'Lead paragraph — used to open a dense section.'],
+  ['Body', 'sds-type-body', '14 / 400 / 1.6', 'Default running text. The workhorse size for everything in-app.'],
+  ['Small', 'sds-type-small', '12 / 400', 'Meta, secondary labels, table cells.'],
+  ['Caption', 'sds-type-caption', '11 / 400', 'Captions, footnotes, timestamps.'],
+  ['Mono', 'sds-type-mono', '12 / 400', 'INV-1042 · $12,480.00 · 2026-07-07'],
+];
+
+function App() {
+  return (
+    <React.Fragment>
+      <header className="doc-head">
+        <p className="eyebrow">Slate Design System · Foundation</p>
+        <h1 className="sds-type-h1">Foundation Audit</h1>
+        <p className="sds-type-body-lg">The locked foundation before we build page-level patterns. Color and type are
+          fixed; every core primitive is audited for its full range of states. Nothing here introduces a new hue.</p>
+      </header>
+
+      {/* 1 — COLOR */}
+      <Sec n="01" title="Color policy" status="Locked" statusTone="success">
+        <Panel label="Slate neutrals — structure is colorless">
+          <div className="row" style={{ gap: 0, borderRadius: 'var(--radius-control)', overflow: 'hidden', border: '1px solid var(--border)' }}>
+            {['50','100','200','300','400','500','600','700','800','900','950'].map(s => (
+              <div key={s} style={{ flex: 1, height: 56, background: `var(--slate-${s})` }} title={`slate-${s}`}></div>
+            ))}
+          </div>
+          <p className="note">Layout, borders, text and surfaces draw only from the slate scale.</p>
+        </Panel>
+        <Panel label="One accent + muted functional color">
+          <div className="grid-2">
+            <div>
+              <div className="row" style={{ gap: 'var(--space-2)' }}>
+                <div style={{ width: 56, height: 40, borderRadius: 'var(--radius-control)', background: 'var(--accent)' }} title="accent blue-700"></div>
+                <div className="sds-type-small">
+                  <div style={{ fontWeight: 600 }}>Accent — blue #1d4ed8</div>
+                  <div style={{ color: 'var(--text-muted)' }}>Carries every emphasis. The only bold color.</div>
+                </div>
+              </div>
+            </div>
+            <div className="row">
+              {[['success','var(--success)'],['warning','var(--warning)'],['danger','var(--danger)'],['info','var(--info)']].map(([k,v]) => (
+                <div key={k} className="col" style={{ gap: 4, alignItems: 'center' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-control)', background: v }}></div>
+                  <span className="sds-type-caption" style={{ color: 'var(--text-muted)' }}>{k}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="note">Semantic hues appear only where hue encodes meaning, tuned to sit quietly beside the blue — never competing with it.</p>
+        </Panel>
+      </Sec>
+
+      {/* 2 — TYPE */}
+      <Sec n="02" title="Type scale" status="Formalized" statusTone="success">
+        <Panel label="Geist · 14px base · ratio 1.333 — semantic roles">
+          {TYPE_ROLES.map(([name, cls, spec, sample]) => (
+            <div className="type-row" key={name}>
+              <div className="meta"><b>{name}</b>{spec}</div>
+              <div className={`spec ${cls}`}>{sample}</div>
+            </div>
+          ))}
+          <p className="note">Every role bundles size + weight + line-height + tracking as a token and a <code>.sds-type-*</code> utility class.</p>
+        </Panel>
+      </Sec>
+
+      {/* 3 — BUTTONS */}
+      <Sec n="03" title="Buttons" status="Complete" statusTone="success">
+        <Panel label="Variants — one solid per view">
+          <div className="row">
+            <Button variant="primary">Create Invoice</Button>
+            <Button variant="secondary">Cancel</Button>
+            <Button variant="ghost">Learn More</Button>
+            <Button variant="danger" leadingIcon="trash">Delete</Button>
+          </div>
+        </Panel>
+        <Panel label="States — loading · disabled · sizes">
+          <div className="row">
+            <Button variant="primary" loading>Sending</Button>
+            <Button variant="primary" disabled>Disabled</Button>
+            <Button variant="secondary" disabled>Disabled</Button>
+            <Button variant="primary" size="sm">Small</Button>
+            <Button variant="primary" size="lg">Large</Button>
+          </div>
+        </Panel>
+      </Sec>
+
+      {/* 4 — FORM STATES */}
+      <Sec n="04" title="Form fields — every state" status="States filled" statusTone="success">
+        <Panel label="Text · textarea · select — default / error / success / disabled">
+          <div className="grid-3">
+            <Input label="Work email" defaultValue="dana@acme.com" helpText="We'll only use this for receipts." />
+            <Input label="Slug" defaultValue="acme-inc" error="This slug is already taken." />
+            <Input label="Slug" defaultValue="acme-billing" success="Available." />
+          </div>
+          <div className="grid-3" style={{ marginTop: 'var(--space-4)' }}>
+            <Select label="Role" options={['Owner','Admin','Member']} />
+            <Select label="Region" error="Select a billing region." options={['US','EU','APAC']} placeholder="Choose…" defaultValue="" />
+            <Input label="API key" defaultValue="sk_live_•••• 4242" disabled helpText="Rotate from Settings." />
+          </div>
+          <div className="grid-2" style={{ marginTop: 'var(--space-4)' }}>
+            <Textarea label="Description" rows={2} defaultValue="Monthly retainer for design system work." success="Looks good." />
+            <Textarea label="Notes" rows={2} error="Notes can't be empty." />
+          </div>
+        </Panel>
+        <Panel label="Selection controls — with validation + helper text">
+          <div className="grid-3">
+            <div className="col">
+              <Checkbox label="Email me receipts" defaultChecked />
+              <Checkbox label="Accept terms" error="You must accept to continue." />
+              <Checkbox label="Enable 2FA" success="Recommended." defaultChecked />
+              <Checkbox label="Beta features" disabled />
+            </div>
+            <div className="col">
+              <Radio name="plan" label="Monthly" defaultChecked />
+              <Radio name="plan" label="Annual (save 20%)" helpText="Billed once per year." />
+              <Radio name="plan2" label="Enterprise" disabled />
+            </div>
+            <div className="col">
+              <Switch label="Public project" defaultChecked />
+              <Switch label="Auto-pay" success="On — invoices settle automatically." defaultChecked />
+              <Switch label="Read-only mode" disabled />
+            </div>
+          </div>
+        </Panel>
+      </Sec>
+
+      {/* 5 — BADGES / TAGS / AVATARS */}
+      <Sec n="05" title="Badges, tags & avatars" status="Complete + Avatar added" statusTone="success">
+        <Panel label="Badges (status) · Tags (categorical)">
+          <div className="row">
+            <Badge tone="neutral">Draft</Badge>
+            <Badge tone="info" dot>In review</Badge>
+            <Badge tone="success" dot>Active</Badge>
+            <Badge tone="warning">Past due</Badge>
+            <Badge tone="danger">Suspended</Badge>
+            <span style={{ width: 1, height: 20, background: 'var(--border)' }}></span>
+            <Tag hue="blue">Design</Tag>
+            <Tag hue="teal">Finance</Tag>
+            <Tag hue="violet">Legal</Tag>
+            <Tag hue="amber">Ops</Tag>
+          </div>
+        </Panel>
+        <Panel label="Avatar — image / initials fallback · presence · group (new)">
+          <div className="row">
+            <Avatar name="Dana Ruiz" status="online" />
+            <Avatar name="Kai Okafor" status="away" />
+            <Avatar name="Lea Bianchi" status="busy" />
+            <Avatar name="System" size="sm" />
+            <Avatar name="Priya Nair" size="lg" status="offline" />
+            <span style={{ width: 1, height: 32, background: 'var(--border)' }}></span>
+            <AvatarGroup max={3}>
+              <Avatar name="Dana Ruiz" />
+              <Avatar name="Kai Okafor" />
+              <Avatar name="Lea Bianchi" />
+              <Avatar name="Priya Nair" />
+              <Avatar name="Tom Vega" />
+            </AvatarGroup>
+          </div>
+        </Panel>
+      </Sec>
+
+      {/* 6 — FEEDBACK: alerts + toasts */}
+      <Sec n="06" title="Inline alerts & toasts" status="New" statusTone="info">
+        <Panel label="Alert — inline, in-flow · hue carries meaning">
+          <div className="col">
+            <Alert tone="info" title="Heads up">Your trial ends in 5 days. Add a payment method to keep sending invoices.</Alert>
+            <Alert tone="success" title="Changes saved" onDismiss={() => {}}>Your billing profile is up to date.</Alert>
+            <Alert tone="warning">This workspace is over its seat limit. Two members can't sign in.</Alert>
+            <Alert tone="danger" title="Payment failed"
+              actions={<React.Fragment><Button size="sm" variant="danger">Retry</Button><Button size="sm" variant="ghost">Update card</Button></React.Fragment>}>
+              We couldn't charge the card ending 4242.
+            </Alert>
+          </div>
+        </Panel>
+        <Panel label="Toast — transient, floating (soft popover shadow)">
+          <div className="col" style={{ maxWidth: 380 }}>
+            <Toast tone="success" title="Invoice sent" onDismiss={() => {}}>INV-1042 emailed to dana@acme.com.</Toast>
+            <Toast tone="info" title="Export ready" onDismiss={() => {}}>Your CSV is ready to download.</Toast>
+            <Toast tone="danger" title="Sync failed" onDismiss={() => {}}>We'll retry automatically in a minute.</Toast>
+          </div>
+        </Panel>
+      </Sec>
+
+      {/* 7 — SKELETON + EMPTY */}
+      <Sec n="07" title="Skeletons & empty states" status="New" statusTone="info">
+        <div className="grid-2">
+          <Panel label="Skeleton — quiet slate shimmer, no spinner">
+            <div className="row" style={{ alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+              <Skeleton variant="circle" width={40} height={40} />
+              <div className="col" style={{ flex: 1, gap: 'var(--space-2)' }}>
+                <Skeleton variant="line" width="45%" />
+                <Skeleton variant="text" lines={3} />
+              </div>
+            </div>
+            <div style={{ marginTop: 'var(--space-4)' }}><Skeleton variant="rect" height={72} /></div>
+            <div style={{ marginTop: 'var(--space-4)' }}><Skeleton variant="button" /></div>
+          </Panel>
+          <Panel label="Empty state — says what will appear">
+            <EmptyState
+              icon="document-text"
+              title="No invoices yet"
+              description="Invoices you create will show up here with their status and due date."
+              action={<Button variant="primary" leadingIcon="plus">Create Invoice</Button>}
+            />
+          </Panel>
+        </div>
+      </Sec>
+
+    </React.Fragment>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

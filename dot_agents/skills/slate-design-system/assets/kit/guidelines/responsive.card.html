@@ -1,0 +1,61 @@
+<!-- @dsCard group="Foundations" viewport="860x520" name="Responsive Rules" subtitle="Three breakpoints, desktop-first, defined collapse behavior" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 32px 36px; background: var(--surface-page); color: var(--text-primary); }
+  h1 { margin: 0 0 4px; font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { margin: 0 0 28px; font-size: 14px; color: var(--text-secondary); max-width: 62ch; }
+  .bps { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; margin-bottom: 28px; }
+  .bp { display: grid; grid-template-columns: 150px 110px 1fr; gap: 16px; align-items: center; padding: 14px 20px; }
+  .bp + .bp { border-top: 1px solid var(--border); }
+  .bp__name { font-weight: 600; font-size: 14px; }
+  .bp__q { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+  .bp__desc { font-size: 13px; color: var(--text-secondary); }
+  .rules { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+  .rules li { font-size: 13px; color: var(--text-secondary); line-height: 1.5; padding-left: 14px; position: relative; }
+  .rules li::before { content: ''; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .rules strong { color: var(--text-primary); font-weight: 600; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { color: var(--link-hover); }
+</style>
+</head>
+<body>
+  <h1>Responsive Rules</h1>
+  <p class="sub">Desktop-first with <code style="font-family: var(--font-mono); font-size: 12px;">max-width</code> queries. Exactly three breakpoints — never invent a fourth. Reference values live in <code style="font-family: var(--font-mono); font-size: 12px;">tokens/layout.css</code>.</p>
+
+  <div class="bps">
+    <div class="bp">
+      <div class="bp__name">Desktop</div>
+      <div class="bp__q">default</div>
+      <div class="bp__desc">Full layout. Sidebars expanded, multi-column grids, hover states.</div>
+    </div>
+    <div class="bp">
+      <div class="bp__name">Tablet</div>
+      <div class="bp__q">≤ 1024px</div>
+      <div class="bp__desc">Dashboard sidebar collapses to icon rail. 3-col grids drop to 2.</div>
+    </div>
+    <div class="bp">
+      <div class="bp__name">Mobile</div>
+      <div class="bp__q">≤ 768px</div>
+      <div class="bp__desc">The primary collapse point: everything single-column, split heroes stack, brochure call bar appears.</div>
+    </div>
+    <div class="bp">
+      <div class="bp__name">Phone</div>
+      <div class="bp__q">≤ 640px</div>
+      <div class="bp__desc">Tighten page padding to 20px; full-width buttons in forms and CTAs.</div>
+    </div>
+  </div>
+
+  <ul class="rules">
+    <li><strong>Hit targets ≥ 44px</strong> on mobile — buttons, nav rows, form controls.</li>
+    <li><strong>Tables don't shrink</strong> — below 768px let them scroll horizontally inside their card, or switch to a stacked list.</li>
+    <li><strong>Type doesn't shrink below the scale</strong> — display sizes may step down one scale stop on mobile; body never goes under 14px.</li>
+    <li><strong>Spacing steps down one stop</strong> — section padding 96 → 64, card padding 24 → 20. Stay on the 4/8 scale.</li>
+    <li><strong>No hover-only affordances</strong> — anything revealed on hover must also be reachable by tap or always visible on mobile.</li>
+    <li><strong>One primary action stays visible</strong> — on mobile the view's solid button never scrolls out of the first screen of a form or task.</li>
+  </ul>
+</body>
+</html>

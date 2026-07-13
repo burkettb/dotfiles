@@ -1,0 +1,25 @@
+<!-- @dsCard group="Foundations" viewport="700x150" name="Radius" subtitle="Sharp-leaning. Cards 6px, controls 4px, pill for dots/toggles only." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px 24px; background: var(--surface-page); font-family: var(--font-sans); }
+  .row { display: flex; gap: 28px; align-items: flex-end; }
+  .cell { text-align: center; }
+  .box { width: 96px; height: 64px; background: var(--surface-muted); border: 1px solid var(--border-strong); }
+  .cap { margin-top: 10px; font-size: 11px; }
+  .name { font-weight: 600; color: var(--text-primary); }
+  .tok { font-family: var(--font-mono); color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="cell"><div class="box" style="border-radius:0"></div><div class="cap"><div class="name">None</div><div class="tok">0</div></div></div>
+  <div class="cell"><div class="box" style="border-radius:4px"></div><div class="cap"><div class="name">Control</div><div class="tok">4px</div></div></div>
+  <div class="cell"><div class="box" style="border-radius:6px"></div><div class="cap"><div class="name">Card</div><div class="tok">6px</div></div></div>
+  <div class="cell"><div class="box" style="border-radius:9999px;width:64px"></div><div class="cap"><div class="name">Pill</div><div class="tok">9999px</div></div></div>
+</div>
+</body>
+</html>

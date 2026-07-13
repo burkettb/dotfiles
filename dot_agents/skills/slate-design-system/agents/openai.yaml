@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slate Design System"
+  short_description: "Apply Brandon’s Slate UI language"
+  default_prompt: "Use $slate-design-system to design this frontend with the Slate system."

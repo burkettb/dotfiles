@@ -1,0 +1,27 @@
+<!-- @dsCard group="Foundations" viewport="700x180" name="Elevation" subtitle="Borders define the plane. Shadows only for floating layers." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 28px 24px; background: var(--surface-muted); font-family: var(--font-sans); }
+  .row { display: flex; gap: 28px; }
+  .cell { text-align: center; }
+  .box { width: 150px; height: 76px; background: var(--surface-card); border-radius: var(--radius-card); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-secondary); }
+  .b0 { border: 1px solid var(--border); }
+  .b1 { box-shadow: var(--shadow-popover); }
+  .b2 { box-shadow: var(--shadow-modal); }
+  .cap { margin-top: 10px; font-size: 11px; }
+  .name { font-weight: 600; color: var(--text-primary); }
+  .tok { font-family: var(--font-mono); color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="cell"><div class="box b0">Card at rest</div><div class="cap"><div class="name">Border</div><div class="tok">no shadow</div></div></div>
+  <div class="cell"><div class="box b1">Popover / dropdown</div><div class="cap"><div class="name">Floating</div><div class="tok">--shadow-popover</div></div></div>
+  <div class="cell"><div class="box b2">Modal / dialog</div><div class="cap"><div class="name">Overlay</div><div class="tok">--shadow-modal</div></div></div>
+</div>
+</body>
+</html>

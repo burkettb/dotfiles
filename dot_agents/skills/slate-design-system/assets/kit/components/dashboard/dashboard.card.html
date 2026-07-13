@@ -1,0 +1,304 @@
+<!-- @dsCard group="Dashboard" viewport="1440x1040" name="Dashboard — Composed Sample" subtitle="Shell, KPIs, charts, data table, filters, drawer, settings & activity together" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Slate — Dashboard Sample</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  html, body { margin: 0; height: 100%; }
+  #root { height: 100vh; }
+  .dash-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .dash-page-head h1 { margin: 0; }
+  .dash-page-head p { margin: 4px 0 0; color: var(--text-secondary); }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+  .chart-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .panel-head h3 { margin: 0; font-size: var(--text-md); font-weight: var(--weight-semibold); }
+  .panel-head .sub { font-size: var(--text-sm); color: var(--text-muted); }
+  .panel-body { padding: 20px; }
+  .stack-16 { display: flex; flex-direction: column; gap: 16px; }
+  .invoice-cust { display: flex; align-items: center; gap: 10px; }
+  .invoice-cust .nm { font-weight: var(--weight-medium); color: var(--text-primary); }
+  .invoice-cust .em { font-size: var(--text-xs); color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const S = window.SlateDesignSystem_59ffb3;
+const {
+  DashboardShell, TopBar, Breadcrumbs, SearchField, UserMenu,
+  DataTable, StatCard, LineChart, BarChart, AreaChart, DonutChart,
+  FilterBar, DateRangePicker, MultiSelectFilter, Drawer, DrawerField,
+  SettingsSection, DangerZone, DangerRow, ActivityFeed,
+  Button, Badge, Tag, Avatar, Icon, Input, Select, Switch, Alert
+} = S;
+
+const money = (n) => '$' + n.toLocaleString('en-US');
+
+const INVOICES = [
+  { id: 'INV-1042', customer: 'Northwind Traders', email: 'ap@northwind.com', amount: 12480, status: 'paid', due: '2026-07-01', plan: 'Enterprise' },
+  { id: 'INV-1041', customer: 'Acme Corp', email: 'billing@acme.com', amount: 3200, status: 'open', due: '2026-07-12', plan: 'Growth' },
+  { id: 'INV-1040', customer: 'Globex', email: 'finance@globex.io', amount: 890, status: 'overdue', plan: 'Starter', due: '2026-06-20' },
+  { id: 'INV-1039', customer: 'Soylent Inc', email: 'pay@soylent.com', amount: 5400, status: 'paid', due: '2026-06-28', plan: 'Growth' },
+  { id: 'INV-1038', customer: 'Initech', email: 'ar@initech.com', amount: 2100, status: 'open', due: '2026-07-15', plan: 'Growth' },
+  { id: 'INV-1037', customer: 'Umbrella Co', email: 'accounts@umbrella.co', amount: 18900, status: 'paid', due: '2026-06-15', plan: 'Enterprise' },
+  { id: 'INV-1036', customer: 'Hooli', email: 'billing@hooli.com', amount: 760, status: 'overdue', plan: 'Starter', due: '2026-06-10' },
+  { id: 'INV-1035', customer: 'Vandelay Ind.', email: 'imex@vandelay.com', amount: 4300, status: 'draft', due: '2026-07-20', plan: 'Growth' },
+  { id: 'INV-1034', customer: 'Wonka Labs', email: 'ap@wonka.com', amount: 9600, status: 'paid', due: '2026-06-05', plan: 'Enterprise' },
+  { id: 'INV-1033', customer: 'Stark Industries', email: 'finance@stark.com', amount: 27500, status: 'open', due: '2026-07-25', plan: 'Enterprise' },
+  { id: 'INV-1032', customer: 'Pied Piper', email: 'billing@piedpiper.com', amount: 540, status: 'draft', due: '2026-07-30', plan: 'Starter' },
+];
+
+const STATUS_TONE = { paid: 'success', open: 'info', overdue: 'danger', draft: 'neutral' };
+
+const ACTIVITY = [
+  { actor: 'Dana Ruiz', title: 'marked INV-1042 as paid', time: '9:24 AM', tone: 'success', icon: 'check' },
+  { actor: 'System', title: 'sent a reminder for INV-1040', time: '8:10 AM', tone: 'warning', icon: 'paper-airplane' },
+  { actor: 'Kai Okafor', title: 'created invoice INV-1035 for Vandelay Ind.', time: 'Yesterday', tone: 'info', icon: 'plus' },
+  { actor: 'Lea Bianchi', title: 'updated billing settings', time: 'Yesterday', tone: 'neutral' },
+  { actor: 'System', title: 'flagged INV-1036 as overdue', time: '2 days ago', tone: 'danger', icon: 'bell-alert' },
+];
+
+const REVENUE = { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul'], series: [
+  { name: 'Collected', data: [42,48,46,58,63,71,84] },
+  { name: 'Outstanding', data: [12,15,11,18,14,16,21] },
+]};
+const BYMONTH = { labels: ['Feb','Mar','Apr','May','Jun','Jul'], series: [
+  { name: 'Paid', data: [38,41,52,49,63,72] },
+  { name: 'Overdue', data: [6,9,5,11,7,8] },
+]};
+const PLANS = [
+  { label: 'Enterprise', value: 48 }, { label: 'Growth', value: 34 }, { label: 'Starter', value: 18 },
+];
+
+function StatusBadge({ s }) { return <Badge tone={STATUS_TONE[s]} dot={s !== 'draft'}>{s[0].toUpperCase() + s.slice(1)}</Badge>; }
+
+function Panel({ title, sub, action, children, pad = true }) {
+  return (
+    <div className="sds-card">
+      {(title || action) && (
+        <div className="panel-head">
+          <div><h3>{title}</h3>{sub && <div className="sub">{sub}</div>}</div>
+          {action}
+        </div>
+      )}
+      <div style={pad ? { padding: 20 } : undefined}>{children}</div>
+    </div>
+  );
+}
+
+function Overview() {
+  return (
+    <React.Fragment>
+      <div className="dash-page-head">
+        <div>
+          <h1 className="sds-type-h2">Overview</h1>
+          <p className="sds-type-body">Billing performance for the last 7 months.</p>
+        </div>
+        <Button variant="primary" leadingIcon="plus">Create Invoice</Button>
+      </div>
+      <div className="kpi-grid">
+        <StatCard label="Revenue (MTD)" value={money(84200)} delta={{ value: 12.4 }} sparkline={[42,48,46,58,63,71,84]} />
+        <StatCard label="Outstanding" value={money(21400)} delta={{ value: 4.1, direction: 'up' }} sparkline={[12,15,11,18,14,16,21]} />
+        <StatCard label="Avg. days to pay" value="12" delta={{ value: -18, label: '−3 days' }} sparkline={[19,18,16,15,14,13,12]} />
+        <StatCard label="Active customers" value="248" delta={{ value: 2.0 }} sparkline={[214,220,228,232,240,244,248]} />
+      </div>
+      <div className="chart-grid">
+        <Panel title="Revenue" sub="Collected vs. outstanding, $000s" pad={false}>
+          <div style={{ padding: '16px 20px 8px' }}><AreaChart series={REVENUE.series} labels={REVENUE.labels} height={260} /></div>
+        </Panel>
+        <Panel title="Revenue by plan" pad={false}>
+          <div style={{ padding: '24px 20px' }}><DonutChart data={PLANS} centerValue="$84k" centerLabel="This month" /></div>
+        </Panel>
+      </div>
+      <div className="chart-grid-2">
+        <Panel title="Invoices by month" sub="Paid vs. overdue" pad={false}>
+          <div style={{ padding: '16px 20px 8px' }}><BarChart series={BYMONTH.series} labels={BYMONTH.labels} height={240} /></div>
+        </Panel>
+        <Panel title="Recent activity">
+          <ActivityFeed items={ACTIVITY} />
+        </Panel>
+      </div>
+    </React.Fragment>
+  );
+}
+
+function Invoices({ onOpen }) {
+  const [range, setRange] = React.useState('30d');
+  const [status, setStatus] = React.useState([]);
+  const rows = React.useMemo(() => status.length ? INVOICES.filter(r => status.includes(r.status)) : INVOICES, [status]);
+
+  const columns = [
+    { key: 'id', header: 'Invoice', sortable: true, mono: true, width: 120,
+      render: (r) => <a href="#" onClick={(e) => { e.preventDefault(); onOpen(r); }} style={{ color: 'var(--link)', fontWeight: 500 }}>{r.id}</a> },
+    { key: 'customer', header: 'Customer', sortable: true, render: (r) => (
+      <div className="invoice-cust"><Avatar name={r.customer} size="sm" /><div><div className="nm">{r.customer}</div><div className="em">{r.email}</div></div></div>
+    ) },
+    { key: 'plan', header: 'Plan', render: (r) => <Tag hue={r.plan === 'Enterprise' ? 'violet' : r.plan === 'Growth' ? 'teal' : 'blue'}>{r.plan}</Tag>, filter: false },
+    { key: 'amount', header: 'Amount', sortable: true, mono: true, render: (r) => money(r.amount), filter: false },
+    { key: 'status', header: 'Status', sortable: true, render: (r) => <StatusBadge s={r.status} />, filter: false },
+    { key: 'due', header: 'Due', sortable: true, mono: true, align: 'right', filter: false },
+  ];
+
+  return (
+    <React.Fragment>
+      <div className="dash-page-head">
+        <div><h1 className="sds-type-h2">Invoices</h1><p className="sds-type-body">{rows.length} invoices</p></div>
+        <Button variant="primary" leadingIcon="plus">Create Invoice</Button>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <FilterBar actions={<Button variant="ghost" size="sm" leadingIcon="arrow-down-tray">Export</Button>}>
+          <DateRangePicker value={range} onChange={setRange} />
+          <MultiSelectFilter label="Status" value={status} onChange={setStatus}
+            options={[{ key: 'paid', label: 'Paid' }, { key: 'open', label: 'Open' }, { key: 'overdue', label: 'Overdue' }, { key: 'draft', label: 'Draft' }]} />
+          <MultiSelectFilter label="Plan" options={['Enterprise', 'Growth', 'Starter']} value={[]} onChange={() => {}} />
+        </FilterBar>
+      </div>
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey="id"
+        selectable
+        filterable
+        pageSize={7}
+        bulkActions={[
+          { label: 'Send reminder', icon: 'paper-airplane' },
+          { label: 'Mark paid', icon: 'check' },
+          { label: 'Delete', icon: 'trash', danger: true },
+        ]}
+        rowActions={(r) => [
+          { label: 'View details', icon: 'document-text', onClick: onOpen },
+          { label: 'Duplicate', icon: 'document-duplicate' },
+          { label: 'Send reminder', icon: 'paper-airplane' },
+          { divider: true },
+          { label: 'Delete', icon: 'trash', danger: true },
+        ]}
+      />
+    </React.Fragment>
+  );
+}
+
+function Settings() {
+  return (
+    <React.Fragment>
+      <div className="dash-page-head"><div><h1 className="sds-type-h2">Settings</h1><p className="sds-type-body">Manage your workspace and billing.</p></div></div>
+      <div className="sds-card" style={{ padding: '4px 32px 32px', maxWidth: 940 }}>
+        <SettingsSection title="Workspace" description="How your organization appears on invoices and receipts."
+          footer={<Button variant="primary">Save Changes</Button>}>
+          <Input label="Workspace name" defaultValue="Slate Billing" />
+          <Input label="Billing email" type="email" defaultValue="billing@slate.co" helpText="Receipts and dunning notices are sent here." />
+          <Select label="Default currency" options={['USD — US Dollar', 'EUR — Euro', 'GBP — Pound']} />
+        </SettingsSection>
+        <SettingsSection title="Notifications" description="Choose what Slate emails your team about.">
+          <Switch label="Invoice paid" defaultChecked />
+          <Switch label="Invoice overdue" defaultChecked />
+          <Switch label="Weekly summary" helpText="A Monday-morning digest of collections." />
+        </SettingsSection>
+        <DangerZone>
+          <DangerRow title="Transfer ownership" description="Move this workspace to another admin. You'll lose owner access immediately."
+            action={<Button variant="danger" size="sm">Transfer</Button>} />
+          <DangerRow title="Delete workspace" description="Permanently delete this workspace, its invoices, and customer data. This cannot be undone."
+            action={<Button variant="danger" size="sm" leadingIcon="trash">Delete Workspace</Button>} />
+        </DangerZone>
+      </div>
+    </React.Fragment>
+  );
+}
+
+function App() {
+  const [view, setView] = React.useState('overview');
+  const [drawer, setDrawer] = React.useState(null);
+
+  const nav = [
+    { key: 'overview', label: 'Overview', icon: 'home', active: view === 'overview' },
+    { key: 'invoices', label: 'Invoices', icon: 'document-text', active: view === 'invoices', badge: 3 },
+    { key: 'customers', label: 'Customers', icon: 'users', active: view === 'customers' },
+    { key: 'analytics', label: 'Analytics', icon: 'chart-bar', active: view === 'analytics' },
+    { section: 'Workspace' },
+    { key: 'settings', label: 'Settings', icon: 'cog-6-tooth', active: view === 'settings' },
+  ];
+
+  const crumbMap = { overview: 'Overview', invoices: 'Invoices', settings: 'Settings', customers: 'Customers', analytics: 'Analytics' };
+  const breadcrumbs = <Breadcrumbs items={[{ label: 'Slate' }, { label: crumbMap[view] || 'Overview' }]} />;
+  const topBar = (
+    <TopBar
+      breadcrumbs={breadcrumbs}
+      search={<SearchField placeholder="Search invoices, customers…" width={260} />}
+      user={<UserMenu name="Dana Ruiz" email="dana@slate.co" avatar={<Avatar name="Dana Ruiz" size="sm" status="online" />}
+        items={[{ label: 'Profile', icon: 'users' }, { label: 'Settings', icon: 'cog-6-tooth' }, { divider: true }, { label: 'Sign out', icon: 'arrow-right-on-rectangle' }]} />}
+    />
+  );
+
+  return (
+    <DashboardShell
+      logo="Slate."
+      nav={nav}
+      onNavigate={(it) => it.key && setView(it.key)}
+      topBar={topBar}
+      sidebarFooter={<div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>v2.4 · Pro plan</div>}
+    >
+      {view === 'overview' && <Overview />}
+      {view === 'invoices' && <Invoices onOpen={setDrawer} />}
+      {view === 'settings' && <Settings />}
+      {(view === 'customers' || view === 'analytics') && (
+        <React.Fragment>
+          <div className="dash-page-head"><div><h1 className="sds-type-h2">{crumbMap[view]}</h1></div></div>
+          <div className="sds-card"><div style={{ padding: 8 }}>
+            <div className="sds-empty"><span className="sds-empty__icon"><Icon name="chart-bar" size={24} /></span>
+              <p className="sds-empty__title">{crumbMap[view]} coming soon</p>
+              <p className="sds-empty__desc">This section is scaffolding for the sample. The Overview and Invoices views show the full component set.</p>
+            </div>
+          </div></div>
+        </React.Fragment>
+      )}
+
+      <Drawer
+        open={!!drawer}
+        onClose={() => setDrawer(null)}
+        title={drawer ? drawer.id : ''}
+        description={drawer ? drawer.customer : ''}
+        footer={<React.Fragment><Button variant="ghost" onClick={() => setDrawer(null)}>Close</Button><Button variant="primary" leadingIcon="paper-airplane">Send Reminder</Button></React.Fragment>}
+      >
+        {drawer && (
+          <React.Fragment>
+            <div style={{ marginBottom: 20 }}>
+              {drawer.status === 'overdue'
+                ? <Alert tone="danger" title="Overdue">This invoice was due on {drawer.due}.</Alert>
+                : drawer.status === 'paid'
+                ? <Alert tone="success" title="Paid">Settled in full.</Alert>
+                : <Alert tone="info" title="Open">Due {drawer.due}.</Alert>}
+            </div>
+            <dl style={{ margin: 0 }}>
+              <DrawerField label="Amount"><span className="sds-type-mono" style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>{money(drawer.amount)}</span></DrawerField>
+              <DrawerField label="Status"><StatusBadge s={drawer.status} /></DrawerField>
+              <DrawerField label="Customer"><div className="invoice-cust"><Avatar name={drawer.customer} size="sm" /><div><div className="nm">{drawer.customer}</div><div className="em">{drawer.email}</div></div></div></DrawerField>
+              <DrawerField label="Plan"><Tag hue={drawer.plan === 'Enterprise' ? 'violet' : drawer.plan === 'Growth' ? 'teal' : 'blue'}>{drawer.plan}</Tag></DrawerField>
+              <DrawerField label="Due date"><span className="sds-type-mono">{drawer.due}</span></DrawerField>
+              <DrawerField label="Invoice ID"><span className="sds-type-mono">{drawer.id}</span></DrawerField>
+            </dl>
+            <h4 className="sds-type-h4" style={{ margin: '24px 0 8px' }}>History</h4>
+            <ActivityFeed items={[
+              { actor: 'System', title: 'invoice created', time: drawer.due, tone: 'info', icon: 'plus' },
+              { actor: 'System', title: 'emailed to ' + drawer.email, time: drawer.due, tone: 'neutral', icon: 'paper-airplane' },
+              ...(drawer.status === 'paid' ? [{ actor: 'Dana Ruiz', title: 'marked as paid', time: 'Today', tone: 'success', icon: 'check' }] : []),
+            ]} />
+          </React.Fragment>
+        )}
+      </Drawer>
+    </DashboardShell>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

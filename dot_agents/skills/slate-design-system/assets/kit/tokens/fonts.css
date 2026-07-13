@@ -1,0 +1,8 @@
+/* ---------------------------------------------------------------------------
+   Fonts — Geist Sans (display + body) and Geist Mono (code/data).
+   Geist is the intended neutral grotesk (Vercel/Geist family named in the
+   design profile). Loaded from the Google Fonts CDN rather than local binaries
+   — see readme.md "Fonts" note. Swap these @import lines for local @font-face
+   rules if you vendor the .woff2 files.
+--------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');

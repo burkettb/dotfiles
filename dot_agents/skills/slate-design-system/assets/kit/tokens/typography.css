@@ -1,0 +1,121 @@
+/* ===========================================================================
+   TYPOGRAPHY — one workhorse neutral grotesk (Geist) for display + body.
+   Type as invisible infrastructure. Base 14px, ratio 1.333 (perfect fourth),
+   line-height 1.6. Headings 700, body 400.
+   =========================================================================== */
+
+:root {
+  /* Families */
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-heavy:    800;
+
+  /* Base */
+  --font-size-base: 14px;
+  --line-height:    1.6;
+  --line-height-tight: 1.2;
+
+  /* Type scale — 14px base, ratio 1.333 (perfect fourth), rounded to whole px */
+  --text-xs:   11px;   /* small print, captions */
+  --text-sm:   12px;   /* labels, meta, table headers */
+  --text-base: 14px;   /* body */
+  --text-md:   16px;   /* lead body, large controls */
+  --text-lg:   19px;   /* h4 / card titles */
+  --text-xl:   25px;   /* h3 */
+  --text-2xl:  33px;   /* h2 */
+  --text-3xl:  44px;   /* h1 */
+  --text-4xl:  59px;   /* display */
+  --text-5xl:  79px;   /* hero display */
+
+  /* Tracking */
+  --tracking-tight:  -0.02em;   /* large display */
+  --tracking-normal: 0;
+  --tracking-caps:   0.06em;    /* muted small-caps table headers */
+
+  /* =========================================================================
+     SEMANTIC TYPE ROLES — the formal scale. Each role bundles size + weight +
+     line-height + tracking. Reference these (or the .sds-type-* classes below)
+     rather than raw size tokens, so every heading/body/caption is consistent.
+     ========================================================================= */
+
+  /* display — hero / marketing splash */
+  --type-display-size: var(--text-5xl);  --type-display-weight: var(--weight-heavy);
+  --type-display-line: 1.05;             --type-display-track: var(--tracking-tight);
+
+  /* h1 — page title */
+  --type-h1-size: var(--text-3xl);  --type-h1-weight: var(--weight-bold);
+  --type-h1-line: 1.15;             --type-h1-track: var(--tracking-tight);
+
+  /* h2 — section */
+  --type-h2-size: var(--text-2xl);  --type-h2-weight: var(--weight-bold);
+  --type-h2-line: 1.2;              --type-h2-track: var(--tracking-tight);
+
+  /* h3 — subsection */
+  --type-h3-size: var(--text-xl);   --type-h3-weight: var(--weight-semibold);
+  --type-h3-line: 1.25;             --type-h3-track: var(--tracking-normal);
+
+  /* h4 — card title / label heading */
+  --type-h4-size: var(--text-lg);   --type-h4-weight: var(--weight-semibold);
+  --type-h4-line: 1.3;              --type-h4-track: var(--tracking-normal);
+
+  /* body-lg — lead paragraph */
+  --type-body-lg-size: var(--text-md);  --type-body-lg-weight: var(--weight-regular);
+  --type-body-lg-line: var(--line-height);
+
+  /* body — default running text */
+  --type-body-size: var(--text-base);  --type-body-weight: var(--weight-regular);
+  --type-body-line: var(--line-height);
+
+  /* small — meta, secondary, labels */
+  --type-small-size: var(--text-sm);  --type-small-weight: var(--weight-regular);
+  --type-small-line: 1.45;
+
+  /* caption — captions, footnotes, timestamps */
+  --type-caption-size: var(--text-xs);  --type-caption-weight: var(--weight-regular);
+  --type-caption-line: 1.4;
+
+  /* mono — code, IDs, tabular data */
+  --type-mono-size: var(--text-sm);  --type-mono-weight: var(--weight-regular);
+  --type-mono-line: 1.5;
+}
+
+/* Base document defaults — consumers get sensible type for free */
+html { font-size: var(--font-size-base); }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--line-height);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Reading surfaces — marketing, brochure, and portfolio pages set body copy
+   at 16px (apps stay at the denser 14px). Apply `.sds-reading` to the page
+   root: it remaps the base size tokens in scope, so every component inside
+   (including buttons/inputs, which should be larger on these pages) scales. */
+.sds-reading {
+  --text-base: 16px;
+  --text-md:   18px;
+  --text-sm:   13px;
+  font-size: var(--text-base);
+}
+
+/* Type-role utility classes — apply a full semantic role in one class.
+   Color is left to context so roles work on light and dark surfaces. */
+.sds-type-display { font-size: var(--type-display-size); font-weight: var(--type-display-weight); line-height: var(--type-display-line); letter-spacing: var(--type-display-track); }
+.sds-type-h1      { font-size: var(--type-h1-size);      font-weight: var(--type-h1-weight);      line-height: var(--type-h1-line);      letter-spacing: var(--type-h1-track); }
+.sds-type-h2      { font-size: var(--type-h2-size);      font-weight: var(--type-h2-weight);      line-height: var(--type-h2-line);      letter-spacing: var(--type-h2-track); }
+.sds-type-h3      { font-size: var(--type-h3-size);      font-weight: var(--type-h3-weight);      line-height: var(--type-h3-line);      letter-spacing: var(--type-h3-track); }
+.sds-type-h4      { font-size: var(--type-h4-size);      font-weight: var(--type-h4-weight);      line-height: var(--type-h4-line);      letter-spacing: var(--type-h4-track); }
+.sds-type-body-lg { font-size: var(--type-body-lg-size); font-weight: var(--type-body-lg-weight); line-height: var(--type-body-lg-line); }
+.sds-type-body    { font-size: var(--type-body-size);    font-weight: var(--type-body-weight);    line-height: var(--type-body-line); }
+.sds-type-small   { font-size: var(--type-small-size);   font-weight: var(--type-small-weight);   line-height: var(--type-small-line); }
+.sds-type-caption { font-size: var(--type-caption-size); font-weight: var(--type-caption-weight); line-height: var(--type-caption-line); }
+.sds-type-mono    { font-family: var(--font-mono); font-size: var(--type-mono-size); font-weight: var(--type-mono-weight); line-height: var(--type-mono-line); }

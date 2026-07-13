@@ -1,0 +1,47 @@
+<!-- @dsCard group="Portfolio" viewport="1100x900" name="Project Tiles" subtitle="Text-led tiles (default) + image-forward variant" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; background: var(--surface-page); padding: 48px 40px; }
+  .wrap { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+  .lbl { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 20px; }
+  a { color: var(--link); } a:hover { color: var(--link-hover); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { ProjectTiles } = window.SlateDesignSystem_59ffb3;
+function Demo() {
+  return (
+    <div className="wrap">
+      <div>
+        <div className="lbl">Text-led (default) — when there's no good screenshot</div>
+        <ProjectTiles items={[
+          { title: 'Tidepool', summary: 'A menu bar app that watches your CI and only interrupts when something you own breaks.', meta: 'macOS · Swift · 2025', tags: ['Side project'], tagHue: 'teal' },
+          { title: 'Ledgerline', summary: 'Nightly ETL that reconciles three payment providers into one ledger nobody argues with.', meta: 'Pipeline · Python · 2024', tags: ['Data'], tagHue: 'violet' },
+          { title: 'Meridian Banking', summary: 'Loan approval redesign — from 9 days of paperwork to a 36-hour decision.', meta: 'Web app · React · 2025–26', tags: ['Fintech'], tagHue: 'blue' },
+          { title: 'Fieldnotes', summary: 'A research repository that made "didn\'t we already learn this?" a searchable question.', meta: 'Web app · 2024', tags: ['Research'], tagHue: 'amber' },
+        ]} />
+      </div>
+      <div>
+        <div className="lbl">Image-forward — when the work genuinely photographs well</div>
+        <ProjectTiles variant="media" items={[
+          { title: 'Meridian Banking', subtitle: 'Product design · 2025–26', tags: ['Fintech'], tagHue: 'blue' },
+          { title: 'Atlas Design System', subtitle: 'Systems lead · 2024', tags: ['Systems'], tagHue: 'violet' },
+        ]} />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

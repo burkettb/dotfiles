@@ -1,0 +1,22 @@
+/* ===========================================================================
+   MOTION — choreographed transitions that explain state changes. Restrained.
+   Base duration 300ms; micro-interactions faster. Standard easing.
+   =========================================================================== */
+
+:root {
+  --duration-fast:   150ms;  /* @kind other */
+  --duration-base:   300ms;  /* @kind other */
+  --duration-slow:   450ms;  /* @kind other */
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);  /* @kind other */  /* enter/most */
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1);  /* @kind other */
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1);  /* @kind other */  /* exit */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;  /* @kind other */
+    --duration-base: 0ms;  /* @kind other */
+    --duration-slow: 0ms;  /* @kind other */
+  }
+}

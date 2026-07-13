@@ -1,0 +1,40 @@
+/* ===========================================================================
+   LAYOUT — z-index scale, breakpoints, containers.
+   Never hardcode a z-index; pick the semantic layer below. If two things
+   fight, the fix is choosing the right layer, not +1.
+   =========================================================================== */
+
+:root {
+  /* --- Z-index scale (semantic layers, bottom → top) ----------------------- */
+  --z-base:    0;    /* @kind other */ /* in-flow content */
+  --z-raised:  10;   /* @kind other */ /* locally raised bits (sticky table headers, feed markers) */
+  --z-sticky:  20;   /* @kind other */ /* sticky page navs / headers */
+  --z-fixed:   40;   /* @kind other */ /* fixed bars (mobile call bar, bottom actions) */
+  --z-modal:   50;   /* @kind other */ /* dialog scrim + dialog */
+  --z-drawer:  55;   /* @kind other */ /* slide-over panels */
+  --z-popover: 60;   /* @kind other */ /* menus, popovers, dropdowns */
+  --z-tooltip: 65;   /* @kind other */ /* tooltips beat popovers */
+  --z-toast:   70;   /* @kind other */ /* toasts beat everything interactive */
+  --z-max:     80;   /* @kind other */ /* full-screen takeovers (lightbox) */
+
+  /* --- Breakpoints (reference values) --------------------------------------
+     CSS custom properties cannot be used inside @media conditions, so these
+     are documentation-as-tokens. Use these EXACT literal values in media
+     queries — no other widths:
+       @media (max-width: 640px)   — phone       (single column, stacked)
+       @media (max-width: 768px)   — mobile      (the primary collapse point)
+       @media (max-width: 1024px)  — tablet      (sidebars collapse / 2-col → 1)
+     Desktop is the default; write desktop-first with max-width queries,
+     matching the existing component CSS. */
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+
+  /* --- Containers ----------------------------------------------------------
+     --container-max / --content-measure live in spacing.css (legacy home);
+     these aliases + additions are the canonical set going forward. */
+  --container-page:    var(--container-max);   /* 1200px — marketing/brochure sections */
+  --container-content: 1040px;                 /* dense content pages, blog grids */
+  --container-narrow:  720px;                  /* forms, FAQs, single-purpose tools */
+  --container-prose:   var(--content-measure); /* 70ch — running text */
+}

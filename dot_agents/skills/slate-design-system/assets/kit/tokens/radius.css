@@ -1,0 +1,10 @@
+/* ===========================================================================
+   RADIUS — sharp-leaning. Cards 6px, controls 4px. Do not go rounder.
+   =========================================================================== */
+
+:root {
+  --radius-none:    0;
+  --radius-control: 4px;   /* buttons, inputs, checkboxes, badges */
+  --radius-card:    6px;   /* cards, panels, modals, popovers */
+  --radius-pill:    9999px; /* status dots, avatars, toggles only */
+}

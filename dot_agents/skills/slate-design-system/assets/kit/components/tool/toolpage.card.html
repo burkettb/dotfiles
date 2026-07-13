@@ -1,0 +1,86 @@
+<!-- @dsCard group="Tool" viewport="1440x1000" name="Tool — Composed Sample" subtitle="Working loan calculator: sliders → result → export → docs → related" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Loan Payment Calculator — Tool Sample</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>html, body { margin: 0; } a { color: var(--link); } a:hover { color: var(--link-hover); }</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const {
+  ToolShell, ToolPanels, InputPanel, OutputPanel, RangeSlider, Stepper,
+  ResultCard, ShareExportRow, CodeBlock, CopyButton, HowItWorks, RelatedToolsGrid
+} = window.SlateDesignSystem_59ffb3;
+
+const usd = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+
+function App() {
+  const [amount, setAmount] = React.useState(320000);
+  const [down, setDown] = React.useState(20);
+  const [rate, setRate] = React.useState(6.4);
+  const [years, setYears] = React.useState(30);
+
+  const principal = amount * (1 - down / 100);
+  const r = rate / 100 / 12;
+  const n = years * 12;
+  const monthly = r === 0 ? principal / n : principal * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+  const totalInterest = monthly * n - principal;
+
+  const breakdown = [
+    ['Home price', usd(amount)],
+    ['Down payment', `${down}% · ${usd(amount * down / 100)}`],
+    ['Loan principal', usd(principal)],
+    ['Rate / term', `${rate.toFixed(1)}% · ${years} years`],
+    ['Monthly payment', usd(monthly)],
+    ['Total interest', usd(totalInterest)],
+    ['Total paid', usd(monthly * n)],
+  ].map(([k, v]) => `${k.padEnd(16)} ${v}`).join('\n');
+
+  return (
+    <ToolShell name="Loan Payment Calculator" badge="Free"
+      description="Monthly payment, total interest, and the full breakdown — computed in your browser."
+      footer="Estimates only. Your lender's numbers include taxes, insurance, and fees.">
+      <ToolPanels ratio="1.1fr 1fr">
+        <InputPanel title="Loan">
+          <RangeSlider label="Home price" value={amount} onChange={setAmount} min={50000} max={1500000} step={5000}
+            format={(v) => '$' + v.toLocaleString()} />
+          <RangeSlider label="Down payment" value={down} onChange={setDown} min={0} max={50} step={1} unit="%"
+            helpText={usd(amount * down / 100) + ' down'} />
+          <RangeSlider label="Interest rate" value={rate} onChange={setRate} min={2} max={12} step={0.1} unit="%" />
+          <Stepper label="Term" value={years} onChange={setYears} min={5} max={40} step={5} unit="years" />
+        </InputPanel>
+        <OutputPanel title="Payment" actions={<CopyButton value={() => usd(monthly) + '/mo'} />}>
+          <ResultCard label="Monthly payment" value={usd(monthly)}
+            detail={`${usd(totalInterest)} total interest over ${years} years`} />
+          <CodeBlock label="Breakdown" code={breakdown} />
+          <ShareExportRow items={[
+            { label: 'Copy link', icon: 'clipboard' },
+            { label: 'Download CSV', icon: 'arrow-down-tray' },
+            { label: 'Open in Sheets', icon: 'arrow-up-right' },
+          ]} />
+        </OutputPanel>
+      </ToolPanels>
+      <HowItWorks>
+        <p>Payments follow the standard amortization formula: <code>M = P · r(1+r)ⁿ / ((1+r)ⁿ − 1)</code>, where <code>P</code> is the principal after your down payment, <code>r</code> the monthly rate, and <code>n</code> the number of payments.</p>
+        <p>Everything runs locally — nothing you enter is uploaded or stored.</p>
+      </HowItWorks>
+      <RelatedToolsGrid items={[
+        { name: 'Refinance Break-even', desc: 'When does a lower rate pay off?', icon: 'arrow-path' },
+        { name: 'Rent vs. Buy', desc: 'Side-by-side 10-year cost', icon: 'home' },
+        { name: 'Amortization Table', desc: 'Full payment schedule as CSV', icon: 'document-text' },
+      ]} />
+    </ToolShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

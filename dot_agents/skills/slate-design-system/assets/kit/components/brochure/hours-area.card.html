@@ -1,0 +1,39 @@
+<!-- @dsCard group="Brochure" viewport="1100x760" name="Hours, Location & Service Area" subtitle="Hours table with today highlighted, address, area list" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>body { margin: 0; background: var(--surface-page); padding: 40px 32px; } .stack { max-width: 1020px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { HoursLocation, ServiceArea } = window.SlateDesignSystem_59ffb3;
+function Demo() {
+  return (
+    <div className="stack">
+      <HoursLocation
+        hours={[
+          { day: 'Monday', open: '7:00 AM – 6:00 PM' }, { day: 'Tuesday', open: '7:00 AM – 6:00 PM' },
+          { day: 'Wednesday', open: '7:00 AM – 6:00 PM' }, { day: 'Thursday', open: '7:00 AM – 6:00 PM' },
+          { day: 'Friday', open: '7:00 AM – 5:00 PM' }, { day: 'Saturday', open: '8:00 AM – 12:00 PM' }, { day: 'Sunday' },
+        ]}
+        address={<span>4128 SE Division St<br />Portland, OR 97202</span>}
+        phone="(503) 555-0119" email="hello@ridgelineroofing.com" />
+      <ServiceArea
+        lead="Based in Southeast Portland, we take jobs within about 40 minutes of the shop."
+        areas={['Portland', 'Beaverton', 'Hillsboro', 'Tigard', 'Lake Oswego', 'Milwaukie', 'Gresham', 'Oregon City', 'Vancouver, WA']}
+        radiusLabel="~40 min radius"
+        note="Not sure if we cover you? Call — we'll tell you in 30 seconds." />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

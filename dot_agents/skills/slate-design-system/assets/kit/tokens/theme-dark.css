@@ -1,0 +1,52 @@
+/* ===========================================================================
+   DARK THEME — OPT-IN, tokens only (experimental).
+   NOT imported by styles.css on purpose: light is the one default theme.
+   To use dark in a consuming project:
+     1. <link rel="stylesheet" href=".../tokens/theme-dark.css"> AFTER styles.css
+     2. set data-theme="dark" on <html> (or any subtree)
+   Remaps semantic aliases only; primitives untouched. Components have NOT
+   been audited on dark — treat as a foundation, not a shipped theme.
+   =========================================================================== */
+[data-theme="dark"] {
+  /* Text */
+  --text-primary:   var(--slate-50);
+  --text-secondary: var(--slate-300);
+  --text-muted:     var(--slate-400);
+  --text-disabled:  var(--slate-600);
+  --text-inverse:   var(--slate-900);
+
+  /* Surfaces — page darkest, cards one step up, matching the light logic */
+  --surface-page:   var(--slate-950);
+  --surface-card:   var(--slate-900);
+  --surface-muted:  var(--slate-900);
+  --surface-sunken: var(--slate-800);
+  --surface-hover:  var(--slate-800);
+  --surface-inverse:var(--slate-50);
+
+  /* Borders */
+  --border:         var(--slate-800);
+  --border-strong:  var(--slate-700);
+  --border-inverse: rgba(2, 6, 23, 0.4);
+
+  /* Accent */
+  --accent:         var(--blue-600);
+  --accent-hover:   var(--blue-500);
+  --accent-fg:      var(--white);
+  --accent-subtle:  rgba(59, 130, 246, 0.15);
+  --link:           var(--blue-400);
+  --link-hover:     var(--blue-200);
+  --focus-ring:     var(--blue-500);
+
+  /* Semantic states — tints become low-alpha fills, fg lifts to 400s */
+  --danger:     var(--red-400);   --danger-fg:  var(--red-400);   --danger-bg:  rgba(220, 38, 38, 0.15);  --danger-border:  rgba(248, 113, 113, 0.3);
+  --success:    var(--green-400); --success-fg: var(--green-400); --success-bg: rgba(22, 163, 74, 0.15);  --success-border: rgba(74, 222, 128, 0.3);
+  --warning:    var(--amber-400); --warning-fg: var(--amber-400); --warning-bg: rgba(217, 119, 6, 0.15);  --warning-border: rgba(251, 191, 36, 0.3);
+  --info:       var(--blue-400);  --info-fg:    var(--blue-400);  --info-bg:    rgba(59, 130, 246, 0.15); --info-border:    rgba(96, 165, 250, 0.3);
+
+  /* Charts */
+  --chart-1: var(--blue-500);   --chart-1-soft: rgba(59, 130, 246, 0.18);
+  --chart-2: var(--slate-500);  --chart-3: var(--slate-300);
+  --chart-4: var(--slate-600);  --chart-5: var(--slate-200);
+  --chart-grid: var(--slate-800);
+  --chart-axis: var(--slate-600);
+}

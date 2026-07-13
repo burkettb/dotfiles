@@ -1,0 +1,158 @@
+<!-- @dsCard group="Marketing" viewport="1440x1000" name="Marketing — Composed Sample" subtitle="Full landing page: hero → logos → features → pricing → FAQ → CTA" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Slate — Marketing Landing Sample</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; background: var(--surface-page); }
+  .nav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 40px; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .nav__logo { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); text-decoration: none; }
+  .nav__links { display: flex; gap: 28px; }
+  .nav__links a { font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
+  .nav__links a:hover { color: var(--text-primary); }
+  .nav__actions { display: flex; gap: 8px; align-items: center; }
+  .sec { max-width: 1120px; margin: 0 auto; padding: 88px 40px; }
+  .sec--tight { padding-top: 48px; padding-bottom: 48px; }
+  .sec + .sec { border-top: 1px solid var(--border); }
+  .footer { border-top: 1px solid var(--border); padding: 40px; display: flex; justify-content: space-between; align-items: center; }
+  .footer span { font-size: 13px; color: var(--text-muted); }
+  a { color: var(--link); } a:hover { color: var(--link-hover); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const {
+  MarketingHero, SectionHeading, FeatureGrid, FeatureRows, BentoGrid, PricingTable,
+  TestimonialGrid, LogoWall, CTABanner, FAQAccordion, StatsBand, NewsletterCapture,
+  BlogCard, ImagePlaceholder, Button
+} = window.SlateDesignSystem_59ffb3;
+
+function App() {
+  return (
+    <div>
+      <nav className="nav">
+        <a className="nav__logo" href="#">Slate.</a>
+        <div className="nav__links">
+          <a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="#blog">Blog</a>
+        </div>
+        <div className="nav__actions">
+          <Button variant="ghost" size="sm">Sign In</Button>
+          <Button variant="primary" size="sm">Start Free Trial</Button>
+        </div>
+      </nav>
+
+      <MarketingHero variant="centered"
+        eyebrow="Billing for finance teams"
+        title="Get invoices paid in days, not weeks."
+        lead="Slate sends branded invoices, chases late payers automatically, and reconciles every payment back to your books."
+        primaryCta="Start Free Trial" secondaryCta="View Pricing"
+        note="Free 14-day trial · No credit card required"
+        media={<ImagePlaceholder label="product screenshot — overview dashboard" ratio="16/8" />} />
+
+      <div className="sec sec--tight" style={{ borderTop: '1px solid var(--border)' }}>
+        <LogoWall label="Trusted by finance teams at" items={['Northwind', 'Globex', 'Initech', 'Umbrella', 'Vandelay', 'Stark']} />
+      </div>
+
+      <section className="sec" id="features">
+        <SectionHeading eyebrow="Features" title="Everything billing, nothing else"
+          lead="One tool for the invoice lifecycle: create, send, remind, collect, reconcile." />
+        <FeatureGrid items={[
+          { icon: 'paper-airplane', title: 'Send in Seconds', body: 'Branded invoices from a template or the API. Recurring billing runs itself.' },
+          { icon: 'bell-alert', title: 'Automatic Reminders', body: 'Polite, escalating nudges until the invoice is paid. You never write a chaser again.' },
+          { icon: 'arrow-path', title: 'Auto-reconcile', body: 'Payments match their invoices the moment they land. Books close themselves.' },
+        ]} />
+      </section>
+
+      <section className="sec">
+        <FeatureRows items={[
+          { eyebrow: 'Reminders', title: 'Late payers, handled politely',
+            body: 'Slate escalates from a friendly nudge to a firm notice on your schedule — and stops the second payment lands.',
+            bullets: ['Your tone, your timing', 'Per-customer schedules', 'CC the requester at day 7'],
+            media: <ImagePlaceholder label="screenshot — reminder timeline" ratio="4/3" /> },
+          { eyebrow: 'Reconcile', title: 'Payments match themselves',
+            body: 'Bank feed in, invoices matched, exceptions surfaced. Month-end stops being a weekend.',
+            bullets: ['Stripe, ACH, checks', 'QuickBooks & Xero sync'],
+            media: <ImagePlaceholder label="screenshot — reconcile view" ratio="4/3" /> },
+        ]} />
+      </section>
+
+      <div className="sec sec--tight">
+        <StatsBand items={[
+          { value: '$1.4B', label: 'invoices processed' },
+          { value: '12 days', label: 'median time to payment' },
+          { value: '4,200+', label: 'finance teams' },
+        ]} />
+      </div>
+
+      <section className="sec" id="pricing">
+        <SectionHeading eyebrow="Pricing" title="Pay for invoices sent, not seats"
+          lead="Every plan includes unlimited customers and automatic reminders." />
+        <PricingTable tiers={[
+          { name: 'Starter', desc: 'For freelancers testing the waters.', price: { monthly: 0, annual: 0 }, cta: 'Start Free',
+            features: ['20 invoices / month', 'Automatic reminders', 'Stripe payments'] },
+          { name: 'Growth', desc: 'For teams that bill every week.', price: { monthly: 49, annual: 39 }, highlighted: true, cta: 'Start Free Trial',
+            features: ['Unlimited invoices', 'Recurring billing', 'QuickBooks & Xero sync', 'Approval workflows'] },
+          { name: 'Enterprise', desc: 'For finance orgs with real requirements.', price: 'Custom', cta: 'Talk to Sales',
+            features: ['SSO & SCIM', 'Audit log export', 'Dedicated support'] },
+        ]} />
+      </section>
+
+      <section className="sec">
+        <SectionHeading eyebrow="Customers" title="Finance teams keep the receipts" />
+        <TestimonialGrid items={[
+          { quote: 'Days-to-payment dropped from 41 to 12. The automatic reminders alone paid for the year.', name: 'Priya Nair', role: 'Head of Finance, Northwind Traders' },
+          { quote: 'We closed our first clean month-end in company history. Reconcile just… did it.', name: 'Marcus Webb', role: 'Controller, Initech' },
+          { quote: 'Set up on a Tuesday, first invoice paid Thursday. I have deleted three spreadsheets.', name: 'Sofia Reyes', role: 'Founder, Reyes Consulting' },
+        ]} />
+      </section>
+
+      <section className="sec" id="faq">
+        <SectionHeading eyebrow="FAQ" title="Answers, not a chatbot" />
+        <FAQAccordion items={[
+          { q: 'Does Slate work with my accounting software?', a: 'Slate syncs bidirectionally with QuickBooks Online and Xero, and exports clean CSV for everything else.' },
+          { q: 'What happens when a customer pays by check?', a: 'Record the check against the invoice; reminders stop instantly and the payment flows to reconciliation like any other.' },
+          { q: 'Can I control the reminder tone?', a: 'Yes — edit every template, set the escalation schedule per customer, and pause any sequence with one click.' },
+          { q: 'How long does setup take?', a: 'Most teams send their first invoice within an hour. Historical import from CSV or QuickBooks takes one afternoon.' },
+        ]} />
+      </section>
+
+      <section className="sec" id="blog">
+        <SectionHeading eyebrow="Blog" title="From the close letter" align="left" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <BlogCard media={<ImagePlaceholder label="post cover" ratio="16/9" radius="0" />} tag="Collections" tagHue="blue"
+            title="The reminder schedule that gets invoices paid in 12 days" author="Priya Nair" date="Jul 2, 2026" readTime="6 min" />
+          <BlogCard media={<ImagePlaceholder label="post cover" ratio="16/9" radius="0" />} tag="Product" tagHue="teal"
+            title="Auto-reconcile is out of beta" author="Kai Okafor" date="Jun 24, 2026" readTime="4 min" />
+          <BlogCard media={<ImagePlaceholder label="post cover" ratio="16/9" radius="0" />} tag="Finance" tagHue="violet"
+            title="A founder's guide to net-30 that actually nets 30" author="Sofia Reyes" date="Jun 12, 2026" readTime="9 min" />
+        </div>
+      </section>
+
+      <div className="sec sec--tight">
+        <NewsletterCapture title="Get the monthly close letter" lead="One email a month on collections tactics. Unsubscribe anytime."
+          note="No spam. Read by 18,000 finance folks." />
+      </div>
+
+      <CTABanner title="Stop chasing invoices." lead="Set up in an afternoon. Your first reminder goes out tomorrow."
+        cta="Start Free Trial" secondaryCta="Book a demo" />
+
+      <footer className="footer">
+        <span>Slate. — sample landing page composed from the Marketing category</span>
+        <span>© 2026</span>
+      </footer>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
