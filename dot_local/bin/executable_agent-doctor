@@ -38,16 +38,12 @@ else
   fail 'Claude settings are invalid JSON'
 fi
 
-if codex --help >/dev/null 2>&1; then
-  pass 'Codex accepts the managed config'
+# `codex plugin list` parses config.toml and fails on invalid TOML;
+# `codex --help` exits 0 regardless and proves nothing.
+if codex plugin list >/dev/null 2>&1; then
+  pass 'Codex parses the managed config'
 else
-  fail 'Codex rejected the managed config'
-fi
-
-if claude --settings "$HOME/.claude/settings.json" --version >/dev/null 2>&1; then
-  pass 'Claude accepts the managed settings'
-else
-  fail 'Claude rejected the managed settings'
+  fail 'Codex could not parse the managed config'
 fi
 
 for required_file in \

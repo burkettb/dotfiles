@@ -88,7 +88,7 @@ Two mechanisms:
 | `dot_local/bin/executable_*` | `~/.local/bin/*` | tmux-sessionizer and friends |
 | `dot_config/kitty/` | `~/.config/kitty` | kitty terminal |
 | `dot_config/private_atuin/` | `~/.config/atuin` | shell history sync |
-| `dot_codex/` | `~/.codex/AGENTS.md`, `~/.codex/config.toml` | Codex defaults, permissions, MCP, and plugins |
+| `dot_codex/` | `~/.codex/AGENTS.md`, `~/.codex/config.toml` | Codex defaults and permissions; `config.toml` is seeded once, then owned by the Codex app |
 | `dot_claude/` | `~/.claude/CLAUDE.md`, `~/.claude/settings.json` | Claude defaults, permissions, hooks, and plugins |
 | `dot_local/bin/executable_agent-*` | `~/.local/bin/agent-*` | Agent bootstrap and health checks |
 | `dot_editorconfig` | `~/.editorconfig` | applies to everything under `~` |
@@ -108,6 +108,13 @@ The dotfiles repository is the source of truth for global Codex and Claude
 instructions, hardened permissions, and plugin declarations. DevCenter remains
 the source of truth for per-project memory and
 standards; its home path is intentionally machine-local.
+
+`~/.codex/config.toml` is a one-time seed (`create_` source): chezmoi writes it
+only when the file is missing, because the Codex app rewrites it at runtime
+with machine-local state (plugin caches, trust hashes, node_repl paths) that
+should not be tracked. To re-seed a machine, delete the file and run
+`chezmoi apply`. Claude's `settings.json` stays fully managed; `agent-doctor`
+verifies the hardening keys are present in both.
 
 Never commit credentials, OAuth state, API keys, or `.env` contents here.
 Agent configuration references environment-variable names only. Use Keychain or

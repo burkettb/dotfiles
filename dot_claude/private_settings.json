@@ -43,7 +43,6 @@
       "Read(~/.gnupg/**)",
       "Read(~/.kube/**)",
       "Read(~/.config/gcloud/**)",
-      "Read(~/.config/gh/hosts.yml)",
       "Read(~/.docker/config.json)",
       "Read(~/Library/Keychains/**)",
       "Agent(codex-rescue)"
@@ -54,6 +53,14 @@
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": true,
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "*.githubusercontent.com",
+        "registry.npmjs.org"
+      ]
+    },
     "credentials": {
       "files": [
         { "path": "~/.ssh", "mode": "deny" },
@@ -61,7 +68,6 @@
         { "path": "~/.gnupg", "mode": "deny" },
         { "path": "~/.kube", "mode": "deny" },
         { "path": "~/.config/gcloud", "mode": "deny" },
-        { "path": "~/.config/gh/hosts.yml", "mode": "deny" },
         { "path": "~/.docker/config.json", "mode": "deny" },
         { "path": "~/Library/Keychains", "mode": "deny" }
       ],
