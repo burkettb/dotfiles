@@ -38,32 +38,56 @@
       "Read(//**/*.key)",
       "Read(//**/*.p12)",
       "Read(//**/*.pfx)",
-      "Read(~/.ssh/**)",
+      "Read(~/.ssh/id_*)",
       "Read(~/.aws/**)",
       "Read(~/.gnupg/**)",
       "Read(~/.kube/**)",
       "Read(~/.config/gcloud/**)",
       "Read(~/.docker/config.json)",
-      "Read(~/Library/Keychains/**)",
-      "Agent(codex-rescue)"
+      "Read(~/Library/Keychains/**)"
     ]
   },
+  "excludedCommands": [
+    "ssh *",
+    "scp *",
+    "rsync *"
+  ],
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": true,
+    "filesystem": {
+      "denyRead": [
+        "~/.ssh"
+      ],
+      "allowRead": [
+        "~/.ssh/config",
+        "~/.ssh/known_hosts"
+      ]
+    },
     "network": {
+      "tlsTerminate": {},
       "allowedDomains": [
         "github.com",
         "api.github.com",
         "*.githubusercontent.com",
-        "registry.npmjs.org"
+        "ghcr.io",
+        "registry.npmjs.org",
+        "registry.yarnpkg.com",
+        "pypi.org",
+        "files.pythonhosted.org",
+        "crates.io",
+        "static.crates.io",
+        "index.crates.io",
+        "proxy.golang.org",
+        "sum.golang.org",
+        "formulae.brew.sh",
+        "api.anthropic.com"
       ]
     },
     "credentials": {
       "files": [
-        { "path": "~/.ssh", "mode": "deny" },
         { "path": "~/.aws", "mode": "deny" },
         { "path": "~/.gnupg", "mode": "deny" },
         { "path": "~/.kube", "mode": "deny" },
@@ -74,8 +98,8 @@
       "envVars": [
         { "name": "ANTHROPIC_API_KEY", "mode": "deny" },
         { "name": "OPENAI_API_KEY", "mode": "deny" },
-        { "name": "GITHUB_TOKEN", "mode": "deny" },
-        { "name": "GH_TOKEN", "mode": "deny" },
+        { "name": "GITHUB_TOKEN", "mode": "mask", "injectHosts": ["github.com", "api.github.com"] },
+        { "name": "GH_TOKEN", "mode": "mask", "injectHosts": ["github.com", "api.github.com"] },
         { "name": "AWS_ACCESS_KEY_ID", "mode": "deny" },
         { "name": "AWS_SECRET_ACCESS_KEY", "mode": "deny" },
         { "name": "AWS_SESSION_TOKEN", "mode": "deny" },

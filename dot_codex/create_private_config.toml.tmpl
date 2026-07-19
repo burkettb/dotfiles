@@ -53,6 +53,7 @@ description = "Workspace access with secrets and credential stores denied"
 
 [permissions.safe-workspace.filesystem]
 glob_scan_max_depth = 20
+"{{ .chezmoi.homeDir }}/.ssh/id_*" = "deny"
 "{{ .chezmoi.homeDir }}/.aws" = "deny"
 "{{ .chezmoi.homeDir }}/.gnupg" = "deny"
 "{{ .chezmoi.homeDir }}/.kube" = "deny"
