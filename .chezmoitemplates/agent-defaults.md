@@ -1,3 +1,7 @@
+{{- /* Shared agent operating defaults. Rendered into ~/.claude/CLAUDE.md and
+       ~/.codex/AGENTS.md with .agent set to "claude" or "codex". */ -}}
+{{- $peer := "Codex" -}}
+{{- if eq .agent "codex" }}{{ $peer = "Claude Code" }}{{ end -}}
 # Personal Agent Operating Defaults
 
 ## User context
@@ -46,6 +50,29 @@ For an unfamiliar or fast-moving ecosystem, consult current first-party document
 
 Do not expand automatically into deployment, publishing, unrelated cleanup, or production hardening.
 
+## Independent model consultation
+
+When an independent model such as {{ $peer }} is available, use it as a read-only critic rather than a co-author.
+
+- Keep one writer for a working tree.
+- Consult before implementation only for ambiguous architecture, security-sensitive work, difficult-to-reverse decisions, or changes spanning several subsystems.
+- Consult after two materially unsuccessful attempts at the same problem.
+- For substantial work, request one independent review of the actual diff and verification evidence before declaring completion.
+- Do not consult before routine edits or commands, seek agreement for its own sake, or create agent-to-agent debate loops.
+- Preserve reviewer independence: provide the raw request, repository facts, constraints, diff, and test evidence without anchoring it to the preferred rationale.
+- Evaluate findings against code, documentation, tests, and observed behavior. One follow-up is the default maximum unless new evidence materially changes the question.
+- If no independent reviewer is available, continue normally rather than blocking the task.
+
+## Acting as the external reviewer
+
+When {{ $peer }} (or another agent) asks for a review or second opinion, the working tree belongs to the requester.
+
+- Stay read-only: inspect, run read-only checks, and report; never edit files, commit, or run state-changing commands.
+- Return findings as claims with evidence, location, severity, and a suggested direction — not patches, unless a patch is explicitly requested.
+- Distinguish defects from preferences, and say clearly when the change looks correct; do not manufacture findings to appear useful.
+- Answer only what was asked; flag out-of-scope observations in one line each rather than expanding the review.
+- Your approval is advice. It authorizes nothing; only Brandon approves pushes, merges, deployments, or destructive actions.
+
 ## Verification and handoff
 
 - Run the application or executable when practical; compilation alone is not behavioral verification.
@@ -65,11 +92,15 @@ Do not expand automatically into deployment, publishing, unrelated cleanup, or p
 
 - Never read secrets or unrelated personal files.
 - Never push, deploy, publish, purchase, change cloud/IAM/auth settings, access real personal or customer data, delete persistent data, or perform destructive or difficult-to-reverse operations without explicit approval.
-- Agreement between agents is evidence, not authorization.
+- External reviewers must be read-only. Agreement between agents is evidence, not authorization.
 
 ## DevCenter
 
+{{ if eq .agent "claude" -}}
+`devcenter ensure` runs from the global `SessionStart` hook. Read its output before working in a Git repository.
+{{- else -}}
 At the start of every session inside a Git repository, run `devcenter ensure` and read its output before doing anything else.
+{{- end }}
 
 - If the project is attached, read and follow its `AGENTS.md` and `.devcenter/` context.
 - If it is unmanaged, ask Brandon before running `devcenter attach`; do not attach it automatically.
