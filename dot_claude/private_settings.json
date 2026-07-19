@@ -7,6 +7,23 @@
   "permissions": {
     "defaultMode": "acceptEdits",
     "disableBypassPermissionsMode": "disable",
+    "allow": [
+      "Bash(kubectl get *)",
+      "Bash(kubectl logs *)",
+      "Bash(kubectl wait *)",
+      "Bash(kubectl rollout status *)",
+      "Bash(kubectl top *)",
+      "Bash(npm run build)",
+      "Bash(npm run typecheck)",
+      "Bash(npm test)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(curl -s http://localhost:*)",
+      "mcp__Claude_Preview__preview_screenshot",
+      "mcp__Claude_Preview__preview_console_logs",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_console_messages"
+    ],
     "ask": [
       "Bash(git push *)",
       "Bash(gh pr merge *)",
