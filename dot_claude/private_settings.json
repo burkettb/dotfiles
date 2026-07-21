@@ -64,16 +64,16 @@
       "Read(~/Library/Keychains/**)"
     ]
   },
-  "excludedCommands": [
-    "ssh *",
-    "scp *",
-    "rsync *"
-  ],
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": true,
+    "excludedCommands": [
+      "ssh *",
+      "scp *",
+      "rsync *"
+    ],
     "filesystem": {
       "denyRead": [
         "~/.ssh"
