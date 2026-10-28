@@ -15,19 +15,35 @@ claude_plugins=(
   'thread-card@dotfiles'
 )
 
-# thread-card is read in place from this repo's folder marketplace; adding it
-# again when it's already known is a no-op.
-claude plugin marketplace add "$HOME/.dotfiles/claude-plugins" >/dev/null
+# thread-card is read in place from this repo's folder marketplace. Add it only
+# when it's missing: `marketplace add` rewrites the settings path to an
+# absolute one, which chezmoi then reports as drift.
+if ! claude plugin marketplace list --json | jq -e 'map(select(.name == "dotfiles")) | length == 1' >/dev/null; then
+  claude plugin marketplace add "$HOME/.dotfiles/claude-plugins" >/dev/null
+fi
+
+# Prints enabled, disabled or missing for one installed-plugin id.
+claude_plugin_state() {
+  claude plugin list --json | jq -r --arg p "$1" \
+    'map(select(.id == $p)) | if length == 0 then "missing" elif .[0].enabled then "enabled" else "disabled" end'
+}
 
 for plugin in "${claude_plugins[@]}"; do
-  # `details` fails for both missing and unresolved installs; reinstall repairs either.
-  if claude plugin details "$plugin" >/dev/null 2>&1; then
-    printf 'Claude plugin resolves: %s\n' "$plugin"
-  else
+  state=$(claude_plugin_state "$plugin")
+  # `details` also resolves a plugin that isn't installed (straight from its
+  # marketplace), so whether it's installed comes from `plugin list`; `details`
+  # still catches an install that no longer resolves, which a reinstall repairs.
+  if [[ $state == missing ]] || ! claude plugin details "$plugin" >/dev/null 2>&1; then
     claude plugin install --scope user "$plugin"
+    state=$(claude_plugin_state "$plugin")
   fi
-  # Enable failures must surface; set -e aborts the bootstrap on one.
-  claude plugin enable "$plugin"
+  # `enable` errors on a plugin that's already enabled, so only enable what's
+  # off. A real enable failure still aborts the bootstrap under set -e.
+  if [[ $state == enabled ]]; then
+    printf 'Claude plugin enabled: %s\n' "$plugin"
+  else
+    claude plugin enable "$plugin"
+  fi
 done
 
 for plugin in \
