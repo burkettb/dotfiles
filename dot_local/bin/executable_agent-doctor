@@ -47,7 +47,7 @@ else
 fi
 
 claude_plugin_json=$(claude plugin list --json 2>/dev/null) || claude_plugin_json='[]'
-for plugin in 'typescript-lsp@claude-plugins-official' 'codex@openai-codex'; do
+for plugin in 'typescript-lsp@claude-plugins-official' 'codex@openai-codex' 'thread-card@dotfiles'; do
   if jq -e --arg p "$plugin" 'map(select(.id == $p and .enabled == true)) | length == 1' <<<"$claude_plugin_json" >/dev/null; then
     pass "Claude plugin enabled: $plugin"
   else

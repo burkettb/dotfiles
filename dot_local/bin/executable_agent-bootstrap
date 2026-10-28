@@ -12,7 +12,12 @@ done
 claude_plugins=(
   'typescript-lsp@claude-plugins-official'
   'codex@openai-codex'
+  'thread-card@dotfiles'
 )
+
+# thread-card is read in place from this repo's folder marketplace; adding it
+# again when it's already known is a no-op.
+claude plugin marketplace add "$HOME/.dotfiles/claude-plugins" >/dev/null
 
 for plugin in "${claude_plugins[@]}"; do
   # `details` fails for both missing and unresolved installs; reinstall repairs either.
