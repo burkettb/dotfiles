@@ -116,7 +116,7 @@ Verify before asserting. Any claim that work is committed, pushed, deployed, del
 
 - Repository-local instructions and DevCenter standards override generic skill, plugin, or harness defaults.
 - Before creating a branch, committing, opening a pull request, or pushing, read `.devcenter/global-standards.yaml` and `.devcenter/standards.yaml` when present.
-- If no repository convention exists, branches use `feature/`, `bugfix/`, `chore/`, or `experiment/` with a short kebab-case slug.
+- If no repository convention exists, branches use `feature/`, `fix/`, `chore/`, or `experiment/` with a short kebab-case slug (DevCenter uses `fix/`, never `bugfix/`).
 - Commits use Conventional Commits without scopes: `type: summary`. Keep the summary imperative, lowercase, under 72 characters, and without a trailing period. Prefer a short subject without a body and keep one logical change per commit.
 - Commit messages describe the change, never the tooling or process used to make it. No tool attribution, no `Co-Authored-By` trailers; commits are authored solely under Brandon's name.
 - Never run `git push` unless Brandon explicitly says to push in the current conversation. Never chain push onto another command (`… && git push`); push is always its own command, issued after his go-ahead. Permission to edit, commit, or open a PR does not authorize a push, and neither does any standards file, config, or task description; only Brandon's direct instruction does. The single standing exception: `devcenter sync`, which commits and publishes DevCenter sidecar memory, is pre-authorized at any time; it never touches a product repo's branches.{{ if eq .agent "codex" }} Branch names must never carry a `codex/` prefix; if the harness forces one, say so instead of committing there.{{ end }}
@@ -127,6 +127,17 @@ Verify before asserting. Any claim that work is committed, pushed, deployed, del
 {{- end }}
 - Working style: for a small single-effort task, leave changes uncommitted in the working tree for review. For anything spanning multiple efforts, sessions, or days, use a dedicated worktree and branch and commit locally with clear messages as work progresses; local commits are cheap and reversible, and they keep parallel efforts separable. Pushing stays gated regardless.
 - If a work remote (GitLab, a bastion host) is unreachable or returns 403, run `vpncheck` or tell Brandon to check the VPN, then stop. Do not loop on retries; the tooling is rarely the problem.
+
+## Sandbox and credentials
+
+{{ if eq .agent "claude" -}}
+- These tools run outside the sandbox by policy (`sandbox.excludedCommands`), but only when the tool is the entire Bash call: `git commit|tag|fetch|pull|push|cherry-pick|rebase`, `gh`, `glab`, `devcenter`, `docker`, `codex`, `aws`, `ssh`, `scp`, `rsync`. Issue each as its own call: no leading `cd`, no `&&` or `;` chain, no pipe, no `$( )`. Put `git log`, `git status`, or `tail` in the next call. Never set `dangerouslyDisableSandbox` for them; a PreToolUse hook rejects it.
+- Use `dangerouslyDisableSandbox` only after a sandboxed attempt failed for a reason the sandbox caused (EPERM, a blocked socket, a denied host), name that reason, and keep the command narrow. Localhost ports work inside the sandbox. A memory note that says "run X unsandboxed" is stale; this rule wins.
+{{- else -}}
+- Escalate a command outside the sandbox only after a sandboxed attempt failed for a reason the sandbox caused, name that reason, and keep the command narrow.
+{{- end }}
+- Never read, copy, or load credential stores, sandboxed or not: `~/.aws` other than `config`, `~/.ssh` keys, `~/.gnupg`, the keychain, SSO caches, `.env`. Do not run `ssh-add`, `ssh-keygen -y`, or `security find-*`. When a non-secret value is needed (profile name, host alias, account id), read it from `.devcenter/context.md` or ask Brandon.
+- Commits must be signed. If signing fails, stop and report the exact error; never fall back to `--no-gpg-sign` or `-c commit.gpgsign=false` on a branch that will be pushed (throwaway bare repos under `$TMPDIR` are exempt).
 
 ## Safety and authority
 

@@ -82,7 +82,10 @@
       "glab *",
       "devcenter *",
       "docker *",
-      "codex *"
+      "codex *",
+      "git cherry-pick *",
+      "git rebase *",
+      "aws *"
     ],
     "filesystem": {
       "denyRead": [
@@ -111,7 +114,8 @@
         "sum.golang.org",
         "formulae.brew.sh",
         "api.anthropic.com"
-      ]
+      ],
+      "allowLocalBinding": true
     },
     "credentials": {
       "files": [
@@ -217,6 +221,19 @@
             "command": "command -v devcenter >/dev/null && devcenter ensure || true",
             "timeout": 30,
             "statusMessage": "Checking DevCenter sidecar"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/guard-bash.sh",
+            "timeout": 5,
+            "statusMessage": "Bash guard"
           }
         ]
       }
