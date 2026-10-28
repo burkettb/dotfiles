@@ -1,0 +1,11 @@
+{
+  "name": "dotfiles",
+  "owner": { "name": "Brandon Burkett" },
+  "plugins": [
+    {
+      "name": "thread-card",
+      "source": "./thread-card",
+      "description": "A pane beside the chat with this thread's goal, progress and your action items, a band when the thread gets long or drifts, and /threads for every open thread at once."
+    }
+  ]
+}
