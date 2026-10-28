@@ -1,0 +1,6 @@
+{
+  "name": "thread-card",
+  "version": "0.1.0",
+  "description": "A pane beside the chat with this thread's goal, progress and your action items, plus a band when the thread gets long or drifts.",
+  "types": "./types/index.d.ts"
+}
