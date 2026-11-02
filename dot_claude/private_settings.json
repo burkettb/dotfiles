@@ -19,7 +19,8 @@
       "Bash(npx tsc --noEmit *)",
       "Bash(curl -s http://localhost:*)",
       "mcp__Claude_Preview__preview_screenshot",
-      "mcp__Claude_Preview__preview_console_logs"
+      "mcp__Claude_Preview__preview_console_logs",
+      "Edit(//Users/brandon/dev/devcenter-personal/**)"
     ],
     "ask": [
       "Bash(git push *)",
@@ -61,7 +62,8 @@
       "Read(~/Library/Keychains/**)"
     ],
     "additionalDirectories": [
-      "~/dev/devcenter-work"
+      "~/dev/devcenter-work",
+      "~/dev/devcenter-personal"
     ]
   },
   "sandbox": {
