@@ -30,6 +30,13 @@ compinit
 # FZF integration
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+# mise: per-project tool versions (replaces nvm). Interactive shells get a
+# hook that switches versions on cd; agent shells (no TTY) get shims, which
+# pick the version when the command runs and need no prompt hook.
+if command -v mise >/dev/null; then
+  if [[ -t 0 ]]; then eval "$(mise activate zsh)"; else eval "$(mise activate zsh --shims)"; fi
+fi
+
 # Zoxide (better cd)
 eval "$(zoxide init zsh)"
 
