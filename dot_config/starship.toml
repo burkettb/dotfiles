@@ -1,0 +1,95 @@
+# Starship prompt, styled after the old powerlevel10k "rainbow" setup.
+# Colors are terminal palette numbers (0-15, 254, 255), so the iTerm2 theme
+# still decides the actual shades. Docs: https://starship.rs/config/
+
+add_newline = true
+
+# Left: [ path ] > [ branch status ] >   (\ue0b0 / \ue0b2 are the powerline arrows)
+format = "$directory${custom.dir_end}$git_branch$git_state$git_status${custom.git_end}$character"
+
+# Right: < [ ✔ or ✘ code, duration, jobs, user@host ] < [ time ]
+right_format = "[\ue0b2](fg:0)$status$cmd_duration$jobs$username$hostname[\ue0b2](fg:7 bg:0)$time"
+
+[character]
+format = " "
+
+[directory]
+style = "fg:254 bg:4"
+format = "[ $path ]($style)[$read_only]($read_only_style)"
+repo_root_format = "[ $before_root_path]($before_repo_root_style)[$repo_root]($repo_root_style)[$path ]($style)[$read_only]($read_only_style)"
+before_repo_root_style = "fg:254 bg:4"
+repo_root_style = "bold fg:255 bg:4"
+read_only = " ∅"
+read_only_style = "fg:254 bg:4"
+truncate_to_repo = false
+truncation_length = 8
+truncation_symbol = "…/"
+home_symbol = "~"
+
+# The blue segment's closing arrow depends on whether a green git segment
+# follows it; starship has no "else", so this module covers the no-repo case.
+[custom.dir_end]
+when = "! git rev-parse --is-inside-work-tree >/dev/null 2>&1"
+format = "[\ue0b0](fg:4)"
+shell = ["sh"]
+
+[custom.git_end]
+when = "git rev-parse --is-inside-work-tree >/dev/null 2>&1"
+format = "[\ue0b0](fg:2)"
+shell = ["sh"]
+
+[git_branch]
+format = "[\ue0b0](fg:4 bg:2)[ $branch ]($style)"
+style = "fg:0 bg:2"
+only_attached = false
+
+[git_state]
+format = "[$state( $progress_current/$progress_total) ]($style)"
+style = "fg:0 bg:2"
+
+[git_status]
+format = "([$ahead_behind$staged$modified$untracked$conflicted$stashed]($style))"
+style = "fg:0 bg:2"
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇡${ahead_count}⇣${behind_count} "
+staged = "+${count} "
+modified = "!${count} "
+deleted = "!${count} "
+untracked = "?${count} "
+conflicted = "~${count} "
+stashed = "*${count} "
+renamed = "+${count} "
+
+[status]
+disabled = false
+format = "[ $symbol ]($style)"
+success_symbol = "[✔](fg:2 bg:0)"
+symbol = "[✘ $status](bold fg:1 bg:0)"
+style = "bg:0"
+pipestatus = false
+
+[cmd_duration]
+min_time = 3_000
+format = "[ $duration ]($style)"
+style = "fg:3 bg:0"
+
+[jobs]
+format = "[ $symbol$number ]($style)"
+symbol = "⚙"
+style = "fg:6 bg:0"
+
+[username]
+format = "[ $user]($style)"
+style_user = "fg:3 bg:0"
+style_root = "bold fg:1 bg:0"
+
+[hostname]
+format = "[@$hostname ]($style)"
+style = "fg:3 bg:0"
+
+[time]
+disabled = false
+format = "[ $time ]($style)"
+time_format = "%I:%M:%S %p"
+style = "fg:0 bg:7"

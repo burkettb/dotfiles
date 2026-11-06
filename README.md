@@ -80,7 +80,8 @@ Two mechanisms:
 
 | Source | Target | Notes |
 | --- | --- | --- |
-| `dot_zshrc`, `dot_zprofile`, `dot_p10k.zsh` | `~/.zshrc` etc. | zsh + powerlevel10k |
+| `dot_zshrc`, `dot_zprofile` | `~/.zshrc` etc. | zsh |
+| `dot_config/starship.toml` | `~/.config/starship.toml` | prompt |
 | `dot_shell_common.tmpl` | `~/.shell_common` | shared env/aliases/functions (bash+zsh) |
 | `dot_gitconfig.tmpl`, `dot_gitignore_global` | `~/.gitconfig` etc. | git |
 | `dot_tmux.conf`, `dot_tmux-sessionizer-dirs` | `~/.tmux.conf` etc. | tmux |
