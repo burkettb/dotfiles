@@ -91,14 +91,12 @@ Two mechanisms:
 | `dot_tmux.conf` | `~/.tmux.conf` | tmux |
 | `nvim/` | `~/.config/nvim` (symlink) | Neovim 0.12, one `init.lua`, plugins via built-in `vim.pack`; a symlink so edits apply instantly |
 | `dot_local/bin/executable_*` | `~/.local/bin/*` | tmux-sessionizer and friends |
-| `dot_config/kitty/` | `~/.config/kitty` | kitty terminal |
 | `dot_config/private_atuin/` | `~/.config/atuin` | shell history sync |
 | `dot_codex/` | `~/.codex/AGENTS.md`, `~/.codex/config.toml` | Codex defaults and permissions; `config.toml` is seeded once, then owned by the Codex app |
 | `dot_claude/` | `~/.claude/CLAUDE.md`, `~/.claude/settings.json` | Claude defaults, permissions, hooks, and plugins |
 | `dot_local/bin/executable_agent-*` | `~/.local/bin/agent-*` | Agent bootstrap and health checks |
 | `dot_editorconfig` | `~/.editorconfig` | applies to everything under `~` |
 | `dot_Brewfile.tmpl` | `~/.Brewfile` | `brew bundle --global`; personal-only casks are templated out on work machines |
-| `iterm2/` | — | exported iTerm2 profile/settings JSON, import manually |
 
 ## Troubleshooting
 
