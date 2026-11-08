@@ -24,6 +24,9 @@ git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 # 5. Install the managed agent plugins and verify the setup
 agent-bootstrap
 agent-doctor
+
+# 6. Install node (and anything else in ~/.config/mise/config.toml)
+mise install
 ```
 
 ## Migrating a machine that still uses the old stow setup
@@ -82,6 +85,7 @@ Two mechanisms:
 | --- | --- | --- |
 | `dot_zshrc`, `dot_zprofile`, `dot_p10k.zsh` | `~/.zshrc` etc. | zsh + powerlevel10k |
 | `dot_shell_common.tmpl` | `~/.shell_common` | shared env/aliases/functions (bash+zsh) |
+| `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | global tool versions (node); projects override with `mise.toml` or `.nvmrc` |
 | `dot_gitconfig.tmpl`, `dot_gitignore_global` | `~/.gitconfig` etc. | git |
 | `dot_tmux.conf`, `dot_tmux-sessionizer-dirs` | `~/.tmux.conf` etc. | tmux |
 | `nvim/` | `~/.config/nvim` (symlink) | Neovim; kept as a symlink so edits apply instantly |
