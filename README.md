@@ -84,7 +84,7 @@ Two mechanisms:
 | `dot_shell_common.tmpl` | `~/.shell_common` | shared env/aliases/functions (bash+zsh) |
 | `dot_gitconfig.tmpl`, `dot_gitignore_global` | `~/.gitconfig` etc. | git |
 | `dot_tmux.conf`, `dot_tmux-sessionizer-dirs` | `~/.tmux.conf` etc. | tmux |
-| `nvim/` | `~/.config/nvim` (symlink) | Neovim; kept as a symlink so edits apply instantly |
+| `nvim/` | `~/.config/nvim` (symlink) | Neovim 0.12, one `init.lua`, plugins via built-in `vim.pack`; a symlink so edits apply instantly |
 | `dot_local/bin/executable_*` | `~/.local/bin/*` | tmux-sessionizer and friends |
 | `dot_config/kitty/` | `~/.config/kitty` | kitty terminal |
 | `dot_config/private_atuin/` | `~/.config/atuin` | shell history sync |
@@ -98,7 +98,10 @@ Two mechanisms:
 ## Troubleshooting
 
 - **tmux plugins missing** — install TPM (step 4 above), then `prefix + I`
-- **Neovim LSP issues** — `:LspInfo` and `:Mason` inside nvim
+- **Neovim LSP issues** — `:checkhealth vim.lsp` inside nvim. Language
+  servers come from the Brewfile; nvim enables whichever are installed.
+- **Neovim plugins** — `:lua vim.pack.update()` updates them; versions are
+  pinned in `nvim/nvim-pack-lock.json`.
 - **A file looks stale** — `chezmoi diff` shows drift between repo and home;
   `chezmoi apply` pushes repo → home, `chezmoi re-add` pulls home → repo
 
