@@ -1,0 +1,8 @@
+# Global defaults. Inside a project, its mise.toml (or .nvmrc /
+# .node-version) wins, and mise switches versions when you cd in.
+[tools]
+node = "lts"
+
+[settings]
+# Read existing .nvmrc / .node-version files, not just mise.toml.
+idiomatic_version_file_enable_tools = ["node"]
