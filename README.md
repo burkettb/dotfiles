@@ -11,7 +11,7 @@ the other machine, done.
 # 1. Install Homebrew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# 2. Clone and link (asks for this machine's git email)
+# 2. Clone and link
 git clone git@github.com:burkettb/dotfiles.git ~/.dotfiles
 ~/.dotfiles/install.sh
 
@@ -36,7 +36,7 @@ mise install
 cd ~/.dotfiles && git pull
 # Replaces chezmoi's copies with links; anything that differed is moved to
 # ~/.dotfiles-backup/<timestamp>/. Cleanup only runs if every link checks out.
-./install.sh && ./install.sh --check && git config user.email &&
+./install.sh && ./install.sh --check &&
   brew uninstall chezmoi && rm -rf ~/.config/chezmoi ~/.tmux-sessionizer-dirs
 ```
 
@@ -49,6 +49,7 @@ Never run `chezmoi apply` after pulling this layout.
 | Edit a dotfile | Edit it where it is (`~/.zshrc`) or in `~/.dotfiles/home/`; same file |
 | Track a new dotfile | Move it into `~/.dotfiles/home/` at the same path, then `./install.sh` |
 | Rename or delete a dotfile | Do it in `home/`, then `./install.sh` (removes the stale link) |
+| See what needs attention | Shown in every new terminal, or run `dotfiles-status`: links to update, uncommitted edits, a non-main branch, commits to pull or push |
 | Check every link is in place | `./install.sh --check` |
 | Get changes from the other machine | `git pull` (plus `./install.sh` if files were added) |
 | Install/repair agent plugins | `agent-bootstrap` |
@@ -61,7 +62,8 @@ files or skip themselves when a folder doesn't exist:
 
 | What | Where |
 | --- | --- |
-| git email | `~/.gitconfig.local`, written by `install.sh`. `useConfigOnly` makes git refuse to commit without it |
+| git email | GitHub noreply address in the shared `.gitconfig`. Work repos under `~/dev-icfcorp` get the work email from an untracked `~/.gitconfig-icfcorp` on the work Mac |
+| Other machine-only git settings | `~/.gitconfig.local` (untracked, optional) |
 | Work-only shell setup, secrets | `~/.shell_local`, sourced at the end of `.shell_common` |
 | tmux-sessionizer folders | Roots that don't exist are skipped; override with `TMUX_SESSIONIZER_ROOTS` in `~/.shell_local` |
 | Personal-only apps | `Brewfile.personal`, run by hand |

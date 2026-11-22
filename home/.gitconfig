@@ -1,8 +1,8 @@
 [user]
 	name = Brandon Burkett
-	# The email lives in ~/.gitconfig.local (untracked, written by install.sh).
-	# useConfigOnly makes git refuse to commit if it's missing instead of guessing.
-	useConfigOnly = true
+	# GitHub's private noreply address; GitHub still credits these commits to
+	# the account. Work repos override it via the includeIf at the bottom.
+	email = 59125932+burkettb@users.noreply.github.com
 
 [init]
 	defaultBranch = main
@@ -57,11 +57,13 @@
 	tool = nvimdiff
 	colorMoved = default
 	
+# Untracked, optional: anything only this machine needs
 [include]
 	path = ~/.gitconfig.local
 
 [url "git@github.com-icfcorp:ICF-Corp/"]
     insteadOf = git@github.com:ICF-Corp/
 
+# Untracked, work Mac only: [user] email = <work email> for repos under ~/dev-icfcorp
 [includeIf "gitdir:~/dev-icfcorp/"]
     path = ~/.gitconfig-icfcorp

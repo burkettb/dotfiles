@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Links this repo into $HOME. Safe to run any number of times.
 #
-#   ./install.sh          link everything and create the per-machine files
+#   ./install.sh          link everything, seed the Codex config if missing
 #   ./install.sh --check  list anything not linked yet; changes nothing
 #
 # Editing a linked file needs nothing: ~/.zshrc *is* home/.zshrc. Rerun this
-# only after adding, renaming, or deleting a file under home/.
+# only after adding, renaming, or deleting a file under home/. New terminals
+# say when that's needed (see home/.local/bin/dotfiles-status).
 set -euo pipefail
 
 repo=$(cd "$(dirname "$0")" && pwd)
@@ -62,26 +63,7 @@ link() {
     say "linked ~/$rel"
 }
 
-# 1. Git email. It moves from ~/.gitconfig to the untracked ~/.gitconfig.local,
-#    so save it there (keeping anything already in that file) before step 2
-#    replaces ~/.gitconfig.
-local_cfg="$HOME/.gitconfig.local"
-if ! git config --file "$local_cfg" user.email >/dev/null 2>&1; then
-    if $check; then
-        flag "missing: user.email in ~/.gitconfig.local"
-    else
-        email=$(git config --file "$HOME/.gitconfig" user.email 2>/dev/null || true)
-        [[ -n $email ]] || read -rp "Git email for this machine: " email || true
-        if [[ -n $email ]]; then
-            git config --file "$local_cfg" user.email "$email"
-            say "saved git email to ~/.gitconfig.local ($email)"
-        else
-            say "no git email set: git will refuse to commit until ~/.gitconfig.local has one"
-        fi
-    fi
-fi
-
-# 2. Link everything under home/ that git tracks or would track (skips ignored
+# 1. Link everything under home/ that git tracks or would track (skips ignored
 #    junk like .DS_Store)
 for d in "${dir_links[@]}"; do
     link "$d"
@@ -92,7 +74,7 @@ while IFS= read -r f; do
     inside_dir_link "$f" || link "$f"
 done <<< "$linked"
 
-# 3. Remove links from the last run whose file was renamed or deleted in the repo
+# 2. Remove links from the last run whose file was renamed or deleted in the repo
 if [[ -f $manifest ]]; then
     while IFS= read -r rel; do
         l="$HOME/$rel"
@@ -110,6 +92,7 @@ if ! $check; then
     printf '%s\n' "${dir_links[@]}" "$linked" > "$manifest"
 fi
 
+# 3. Seed the Codex config, which Codex then owns
 if [[ ! -f $HOME/.codex/config.toml ]]; then
     if $check; then
         flag "missing: ~/.codex/config.toml"
