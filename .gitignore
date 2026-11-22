@@ -16,8 +16,14 @@
 id_rsa*
 id_ed25519*
 
-# Machine-specific Neovim plugins
-nvim/lua/custom/plugins/local.lua
+nvim.log
 
-# Claude Code session data
-.claude/
+# This repo's own Claude Code session data. home/.claude is the real ~/.claude
+# config and must stay tracked, including against ~/.gitignore_global's .claude rule.
+/.claude/
+!/home/.claude/
+
+# DevCenter's .git/info/exclude hides CLAUDE.md and AGENTS.md anywhere (for its
+# links at the repo root); the real agent files under home/ must stay tracked.
+!/home/.claude/CLAUDE.md
+!/home/.codex/AGENTS.md

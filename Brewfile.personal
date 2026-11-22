@@ -1,0 +1,12 @@
+# Personal Mac only. Run by hand: brew bundle --file ~/.dotfiles/Brewfile.personal
+
+cask "anki"
+cask "db-browser-for-sqlite"
+cask "discord"
+cask "dropbox"
+cask "figma"
+cask "gimp"
+cask "mactex-no-gui"
+cask "notion"
+cask "obs"
+cask "zoom"

@@ -1,7 +1,9 @@
 # Brandon's Dotfiles
 
-macOS development environment, managed with [chezmoi](https://www.chezmoi.io/).
-The repo lives at `~/.dotfiles` and is chezmoi's source directory.
+macOS development environment. The repo lives at `~/.dotfiles`, `home/` mirrors
+`$HOME`, and `install.sh` symlinks each file into place. Editing `~/.zshrc` edits
+`home/.zshrc`, so there's no apply step: commit from `~/.dotfiles`, `git pull` on
+the other machine, done.
 
 ## New machine setup
 
@@ -9,14 +11,13 @@ The repo lives at `~/.dotfiles` and is chezmoi's source directory.
 # 1. Install Homebrew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# 2. Install chezmoi and apply the dotfiles
-brew install chezmoi
-chezmoi init --source ~/.dotfiles --apply git@github.com:Brandon-Burkett/dotfiles.git
-# You'll be prompted for: machine type (personal/work) and git email
+# 2. Clone and link (asks for this machine's git email)
+git clone git@github.com:burkettb/dotfiles.git ~/.dotfiles
+~/.dotfiles/install.sh
 
-# 3. Install everything else (~/.Brewfile is rendered by chezmoi,
-#    with personal-only apps excluded on work machines)
+# 3. Install apps and tools
 brew bundle --global
+brew bundle --file ~/.dotfiles/Brewfile.personal   # personal Mac only
 
 # 4. Install tmux plugin manager, then prefix + I inside tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
@@ -29,98 +30,99 @@ agent-doctor
 mise install
 ```
 
-## Migrating a machine that still uses the old stow setup
-
-The work machine has stow symlinks pointing at the old repo layout; they'll
-dangle after pulling. One-time fix:
+## Moving a machine off chezmoi
 
 ```bash
 cd ~/.dotfiles && git pull
-brew install chezmoi
-
-# Remove the old stow symlinks (files only — leaves real files alone)
-/bin/rm -f ~/.editorconfig ~/.gitconfig ~/.gitignore_global ~/.p10k.zsh \
-  ~/.shell_common ~/.shell_local.example ~/.tmux-sessionizer-dirs ~/.tmux.conf \
-  ~/.zshrc ~/.zprofile ~/.config/nvim ~/.config/iterm2 \
-  ~/.local/bin/git_dir.sh ~/.local/bin/tmux-sessionizer \
-  ~/.local/bin/tmux-ssh-sessionizer ~/.local/bin/tmux-windowizer
-
-# Point chezmoi at the repo and apply (answer: machine=work, work git email)
-chezmoi init --source ~/.dotfiles --apply
-
-brew bundle --global   # personal-only apps are excluded automatically
-brew uninstall stow
+./install.sh          # replaces chezmoi's copies with links; anything that
+                      # differed is moved to ~/.dotfiles-backup/<timestamp>/
+brew uninstall chezmoi && rm -rf ~/.config/chezmoi ~/.local/share/chezmoi
+rm -f ~/.tmux-sessionizer-dirs
 ```
 
-Then restart the terminal. Machine-specific extras still go in `~/.shell_local`.
+Never run `chezmoi apply` after pulling this layout.
 
 ## Daily usage
 
 | Task | Command |
 | --- | --- |
-| Edit a managed file | `chezmoi edit --apply ~/.zshrc` (or edit the `dot_` file in `~/.dotfiles` and `chezmoi apply`) |
-| Edit nvim config | Just edit `~/.config/nvim/...` directly — it's a symlink into the repo |
-| Track a new dotfile | `chezmoi add ~/.foo` |
-| See unapplied changes | `chezmoi diff` / `chezmoi status` |
-| Pull + apply on another machine | `chezmoi update` |
+| Edit a dotfile | Edit it where it is (`~/.zshrc`) or in `~/.dotfiles/home/`; same file |
+| Track a new dotfile | Move it into `~/.dotfiles/home/` at the same path, then `./install.sh` |
+| Rename or delete a dotfile | Do it in `home/`, then `./install.sh` (removes the stale link) |
+| Check every link is in place | `./install.sh --check` |
+| Get changes from the other machine | `git pull` (plus `./install.sh` if files were added) |
 | Install/repair agent plugins | `agent-bootstrap` |
 | Verify agent configuration | `agent-doctor` |
 
-Commit and push from `~/.dotfiles` like any normal git repo.
-
 ## Machine differences (personal vs work)
 
-Two mechanisms:
+Nothing in the repo knows which machine it's on. Differences live in untracked
+files or skip themselves when a folder doesn't exist:
 
-- **Templates** — `.tmpl` files branch on the `machine` and `email` values you
-  entered at `chezmoi init` (stored in `~/.config/chezmoi/chezmoi.toml`).
-  Work-only shell config goes in the `{{ if eq .machine "work" }}` block of
-  `dot_shell_common.tmpl`; the git email is templated in `dot_gitconfig.tmpl`.
-- **`~/.shell_local`** — untracked escape hatch, sourced at the end of
-  `.shell_common` if it exists, for anything that shouldn't be in the repo.
+| What | Where |
+| --- | --- |
+| git email | `~/.gitconfig.local`, written by `install.sh`. `useConfigOnly` makes git refuse to commit without it |
+| Work-only shell setup, secrets | `~/.shell_local`, sourced at the end of `.shell_common` |
+| tmux-sessionizer folders | Roots that don't exist are skipped; override with `TMUX_SESSIONIZER_ROOTS` in `~/.shell_local` |
+| Personal-only apps | `Brewfile.personal`, run by hand |
+| Codex config | `~/.codex/config.toml`, seeded once from `seeds/` |
 
 ## What's here
 
-| Source | Target | Notes |
+| Repo path | Linked to | Notes |
 | --- | --- | --- |
-| `dot_zshrc`, `dot_zprofile` | `~/.zshrc` etc. | zsh |
-| `dot_config/starship.toml` | `~/.config/starship.toml` | prompt |
-| `dot_shell_common.tmpl` | `~/.shell_common` | shared env/aliases/functions (bash+zsh) |
-| `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | global tool versions (node); projects override with `mise.toml` or `.nvmrc` |
-| `dot_gitconfig.tmpl`, `dot_gitignore_global` | `~/.gitconfig` etc. | git |
-| `dot_tmux.conf` | `~/.tmux.conf` | tmux |
-| `nvim/` | `~/.config/nvim` (symlink) | Neovim 0.12, one `init.lua`, plugins via built-in `vim.pack`; a symlink so edits apply instantly |
-| `dot_local/bin/executable_*` | `~/.local/bin/*` | tmux-sessionizer and friends |
-| `dot_config/private_atuin/` | `~/.config/atuin` | shell history sync |
-| `dot_codex/` | `~/.codex/AGENTS.md`, `~/.codex/config.toml` | Codex defaults and permissions; `config.toml` is seeded once, then owned by the Codex app |
-| `dot_claude/` | `~/.claude/CLAUDE.md`, `~/.claude/settings.json` | Claude defaults, permissions, hooks, and plugins |
-| `dot_local/bin/executable_agent-*` | `~/.local/bin/agent-*` | Agent bootstrap and health checks |
-| `dot_editorconfig` | `~/.editorconfig` | applies to everything under `~` |
-| `dot_Brewfile.tmpl` | `~/.Brewfile` | `brew bundle --global`; personal-only casks are templated out on work machines |
+| `home/.zshrc`, `home/.zprofile` | `~/.zshrc` etc. | zsh |
+| `home/.shell_common` | `~/.shell_common` | shared env/aliases/functions (bash+zsh) |
+| `home/.config/starship.toml` | `~/.config/starship.toml` | prompt |
+| `home/.config/mise/` | `~/.config/mise` | global tool versions (node); projects override with `mise.toml` or `.nvmrc` |
+| `home/.gitconfig`, `home/.gitignore_global` | `~/.gitconfig` etc. | git |
+| `home/.tmux.conf` | `~/.tmux.conf` | tmux |
+| `home/.config/nvim/` | `~/.config/nvim` | Neovim 0.12, one `init.lua`, plugins via built-in `vim.pack` |
+| `home/.local/bin/` | `~/.local/bin/*` | tmux-sessionizer and friends, agent bootstrap and health checks |
+| `home/.config/atuin/` | `~/.config/atuin` | shell history sync |
+| `home/.config/linearmouse/` | `~/.config/linearmouse` | mouse settings |
+| `home/.claude/` | `~/.claude/CLAUDE.md`, `settings.json`, `hooks/`, `skills/*` | Claude defaults, permissions, hooks, skills |
+| `home/.codex/` | `~/.codex/AGENTS.md`, `skills/*` | links back to the Claude files, so both agents share one set |
+| `home/.editorconfig` | `~/.editorconfig` | applies to everything under `~` |
+| `home/.Brewfile` | `~/.Brewfile` | `brew bundle --global` |
+| `Brewfile.personal` | not linked | personal-only casks |
+| `seeds/codex-config.toml` | copied once | see Agent configuration |
+| `claude-plugins/` | read in place | Claude folder marketplace |
+
+Folders the repo owns completely (nvim, mise, atuin, linearmouse, each skill) are
+linked as whole folders, so new files inside need no `install.sh` run and apps
+that save by replacing a file can't break the link. Everything else is linked
+file by file, so `~/.claude` and `~/.codex` keep their own runtime files.
 
 ## Troubleshooting
 
-- **tmux plugins missing** — install TPM (step 4 above), then `prefix + I`
-- **Neovim LSP issues** — `:checkhealth vim.lsp` inside nvim. Language
+- **tmux plugins missing**: install TPM (step 4 above), then `prefix + I`
+- **Neovim LSP issues**: `:checkhealth vim.lsp` inside nvim. Language
   servers come from the Brewfile; nvim enables whichever are installed.
-- **Neovim plugins** — `:lua vim.pack.update()` updates them; versions are
-  pinned in `nvim/nvim-pack-lock.json`.
-- **A file looks stale** — `chezmoi diff` shows drift between repo and home;
-  `chezmoi apply` pushes repo → home, `chezmoi re-add` pulls home → repo
+- **Neovim plugins**: `:lua vim.pack.update()` updates them; versions are
+  pinned in `home/.config/nvim/nvim-pack-lock.json`.
+- **A file stopped updating**: an app replaced the link with a copy. Run
+  `./install.sh --check`, compare the copy in the backup folder, then `./install.sh`.
 
 ## Agent configuration
 
 The dotfiles repository is the source of truth for global Codex and Claude
 instructions, hardened permissions, and plugin declarations. DevCenter remains
-the source of truth for per-project memory and
-standards; its home path is intentionally machine-local.
+the source of truth for per-project memory and standards; its home path is
+intentionally machine-local.
 
-`~/.codex/config.toml` is a one-time seed (`create_` source): chezmoi writes it
-only when the file is missing, because the Codex app rewrites it at runtime
-with machine-local state (plugin caches, trust hashes, node_repl paths) that
-should not be tracked. To re-seed a machine, delete the file and run
-`chezmoi apply`. Claude's `settings.json` stays fully managed; `agent-doctor`
-verifies the hardening keys are present in both.
+`home/.claude/CLAUDE.md` is the one instruction file for both agents.
+`home/.codex/AGENTS.md` is a symlink to it, and the few agent-specific lines say
+which agent they apply to. A new skill goes in `home/.claude/skills/<name>/`, with a
+relative link `home/.codex/skills/<name> -> ../../.claude/skills/<name>`, then
+`./install.sh`.
+
+`~/.codex/config.toml` is seeded once from `seeds/codex-config.toml`, because the
+Codex app rewrites it at runtime with machine-local state (plugin caches, trust
+hashes, node_repl paths) that should not be tracked. To re-seed a machine, delete
+the file and run `./install.sh`. Claude's `settings.json` is a link, so changes
+Claude makes to it show up as a diff here; `agent-doctor` verifies the hardening
+keys are present in both.
 
 Never commit credentials, OAuth state, API keys, or `.env` contents here.
 Agent configuration references environment-variable names only. Use Keychain or

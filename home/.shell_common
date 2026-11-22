@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# Common shell configuration for both bash and zsh
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+# UTF-8 locale for glyph/icon rendering
+export LANG=${LANG:-en_US.UTF-8}
+export LC_ALL=${LC_ALL:-en_US.UTF-8}
+export LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}
+
+# Editor
+export EDITOR="nvim"
+export VISUAL="nvim"
+
+# Go
+export GOPATH="$HOME/dev/go"
+
+# Paths
+export PATH="$PATH:$HOME/.local/bin"
+export PATH="$PATH:$GOPATH/bin"
+
+# Development
+export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
+
+# FZF
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+
+# ============================================================================
+# Aliases
+# ============================================================================
+
+# Listing
+# Smart ls wrapper that translates common ls patterns to eza
+ls() {
+    case "$*" in
+        "")
+            # Plain ls - use eza with icons
+            eza --icons --group-directories-first
+            ;;
+        "-lsa"|"-las"|"-als"|"-asl"|"-sal"|"-sla")
+            # ls -lsa (all files with details, including . and ..)
+            eza --icons --group-directories-first -la --total-size
+            ;;
+        "-ltrh"|"-lthr"|"-lrth"|"-lhrt"|"-lhtr"|"-lrht")
+            # ls -ltrh (long, time sorted, reverse, human readable)
+            eza --icons --group-directories-first -l --sort=modified -r
+            ;;
+        "-la"|"-al")
+            # ls -la (all files with details)
+            eza --icons --group-directories-first -la
+            ;;
+        "-l")
+            # ls -l (long format)
+            eza --icons --group-directories-first -l
+            ;;
+        "-a")
+            # ls -a (show hidden)
+            eza --icons --group-directories-first -a
+            ;;
+        *)
+            # For any other combination, try eza first, fall back to real ls if it fails
+            eza --icons --group-directories-first "$@" 2>/dev/null || command ls "$@"
+            ;;
+    esac
+}
+
+# System
+alias reload="source ~/.zshrc"
+alias path='echo -e ${PATH//:/\\n}'
+alias ports="lsof -i -P -n | grep LISTEN"
+
+# Safety nets — only for real terminals. In non-interactive shells (Claude
+# Code / Codex agents) the -i prompt reads EOF, silently skips the operation,
+# and still exits 0, so the caller thinks the rm/cp/mv succeeded.
+if [ -t 0 ]; then
+    alias rm="rm -i"
+    alias cp="cp -i"
+    alias mv="mv -i"
+fi
+alias mkdir="mkdir -pv"
+
+# Development
+alias vim="nvim"
+alias vi="nvim"
+alias v="nvim"
+alias python="python3"
+alias pip="pip3"
+alias serve="python -m http.server"
+
+# Java versions
+alias java-17='export JAVA_HOME=$(/usr/libexec/java_home -v 17); java -version'
+alias java-8='export JAVA_HOME=$(/usr/libexec/java_home -v 1.8); java -version'
+
+# ============================================================================
+# Functions
+# ============================================================================
+
+
+# Find in files with ripgrep and fzf
+fif() {
+    RG_PREFIX="rga --files-with-matches --hidden --glob '!.git/*' --glob '!node_modules/*'"
+    local file
+    file="$(
+        FZF_DEFAULT_COMMAND="$RG_PREFIX '$1'" \
+            fzf-tmux --sort --preview="[[ ! -z {} ]] && rga --hidden --pretty --context 5 {q} {}" \
+                --phony -q "$1" \
+                --bind "change:reload:$RG_PREFIX {q}" \
+                --preview-window="70%:wrap"
+    )" &&
+    nvim "$file"
+}
+
+# Git branch fuzzy finder
+fbr() {
+    local branches branch
+    branches=$(git branch --all | grep -v HEAD) &&
+    branch=$(echo "$branches" |
+           fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+    git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
+}
+
+# Kill process using fzf
+fkill() {
+    local pid
+    pid=$(ps -ef | sed 1d | fzf -m | awk '{print $2}')
+
+    if [ "x$pid" != "x" ]; then
+        echo $pid | xargs kill -${1:-9}
+    fi
+}
+
+# ============================================================================
+# Machine-specific configuration
+# ============================================================================
+# Untracked, per machine: work-only aliases, VPN helpers, secrets, anything
+# that shouldn't live in the repo
+[ -f ~/.shell_local ] && source ~/.shell_local
