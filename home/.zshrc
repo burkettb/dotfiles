@@ -30,6 +30,9 @@ eval "$(zoxide init zsh)"
 # Atuin (better shell history)
 [[ -f /opt/homebrew/bin/atuin ]] && eval "$(atuin init zsh)"
 
+# Flag anything in ~/.dotfiles that needs attention (silent when all is well)
+[[ -t 0 ]] && command -v dotfiles-status >/dev/null && dotfiles-status
+
 # Prompt (config: ~/.config/starship.toml)
 command -v starship >/dev/null && eval "$(starship init zsh)"
 

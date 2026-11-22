@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Says what needs attention in ~/.dotfiles and prints nothing when all is well.
+# ~/.zshrc runs this in every new terminal. Offline: "to pull" counts only what
+# the last git fetch saw.
+repo="$HOME/.dotfiles"
+[[ -x $repo/install.sh ]] || exit 0
+
+note() { printf '\033[33mdotfiles: %s\033[0m\n' "$*"; }
+
+# Links: a file was added, renamed, or deleted in home/, or an app replaced a link
+if ! check=$("$repo/install.sh" --check 2>&1); then
+    count=$(printf '%s\n' "$check" | grep -c '^\(not linked\|stale link\|missing\)')
+    note "$count link(s) out of date. Run ~/.dotfiles/install.sh"
+fi
+
+# Uncommitted edits: yours, or an app or agent writing through a link
+changed=$(git -C "$repo" status --porcelain 2>/dev/null | cut -c4- | sed 's|^home/||')
+if [[ -n $changed ]]; then
+    count=$(printf '%s\n' "$changed" | wc -l | tr -d ' ')
+    names=$(printf '%s\n' "$changed" | head -3 | paste -sd ',' - | sed 's/,/, /g')
+    (( count > 3 )) && names="$names, ..."
+    note "$count uncommitted: $names"
+fi
+
+# The checked-out branch is the live config, so say when it isn't main
+branch=$(git -C "$repo" branch --show-current 2>/dev/null)
+[[ -n $branch && $branch != main ]] && note "on branch $branch, and that is your live config"
+
+# Commits waiting either way
+if counts=$(git -C "$repo" rev-list --left-right --count 'HEAD...@{upstream}' 2>/dev/null); then
+    ahead=${counts%%[[:space:]]*}
+    behind=${counts##*[[:space:]]}
+    (( behind > 0 )) && note "$behind commit(s) to pull"
+    (( ahead > 0 )) && note "$ahead commit(s) not pushed"
+fi
+exit 0
