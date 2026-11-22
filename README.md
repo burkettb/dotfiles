@@ -34,10 +34,10 @@ mise install
 
 ```bash
 cd ~/.dotfiles && git pull
-./install.sh          # replaces chezmoi's copies with links; anything that
-                      # differed is moved to ~/.dotfiles-backup/<timestamp>/
-brew uninstall chezmoi && rm -rf ~/.config/chezmoi ~/.local/share/chezmoi
-rm -f ~/.tmux-sessionizer-dirs
+# Replaces chezmoi's copies with links; anything that differed is moved to
+# ~/.dotfiles-backup/<timestamp>/. Cleanup only runs if every link checks out.
+./install.sh && ./install.sh --check && git config user.email &&
+  brew uninstall chezmoi && rm -rf ~/.config/chezmoi ~/.tmux-sessionizer-dirs
 ```
 
 Never run `chezmoi apply` after pulling this layout.
