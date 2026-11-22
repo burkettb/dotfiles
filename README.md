@@ -88,7 +88,7 @@ Two mechanisms:
 | `dot_shell_common.tmpl` | `~/.shell_common` | shared env/aliases/functions (bash+zsh) |
 | `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | global tool versions (node); projects override with `mise.toml` or `.nvmrc` |
 | `dot_gitconfig.tmpl`, `dot_gitignore_global` | `~/.gitconfig` etc. | git |
-| `dot_tmux.conf`, `dot_tmux-sessionizer-dirs` | `~/.tmux.conf` etc. | tmux |
+| `dot_tmux.conf` | `~/.tmux.conf` | tmux |
 | `nvim/` | `~/.config/nvim` (symlink) | Neovim 0.12, one `init.lua`, plugins via built-in `vim.pack`; a symlink so edits apply instantly |
 | `dot_local/bin/executable_*` | `~/.local/bin/*` | tmux-sessionizer and friends |
 | `dot_config/kitty/` | `~/.config/kitty` | kitty terminal |

@@ -1,26 +1,61 @@
 #!/usr/bin/env bash
+# Pick a project with fzf and switch to its tmux session, creating it if needed.
+#
+# The list is ~ and ~/.dotfiles, every folder directly inside a root, and every
+# git repo nested up to three levels below a root (~/dev/ngd/foo,
+# ~/dev/abandoned/webAttempts/site). Roots that don't exist on this machine are
+# skipped, so the same defaults work on work and personal. To use different
+# roots on one machine, set this in ~/.shell_local:
+#   export TMUX_SESSIONIZER_ROOTS="$HOME/dev:$HOME/other"
+
+if [[ -n ${TMUX_SESSIONIZER_ROOTS:-} ]]; then
+    IFS=: read -ra roots <<< "$TMUX_SESSIONIZER_ROOTS"
+else
+    roots=("$HOME/dev" "$HOME/dev-icfcorp")
+fi
+extras=("$HOME" "$HOME/.dotfiles")
+
+list_projects() {
+    printf '%s\n' "${extras[@]}"
+    for root in "${roots[@]}"; do
+        [[ -d $root ]] || continue
+        # Every folder directly inside the root, repo or not
+        find "$root" -mindepth 1 -maxdepth 1 -type d ! -name '.*'
+        # Git repos further down. Skips hidden and dependency folders; .git can
+        # be a folder or, in a worktree, a file.
+        find "$root" -mindepth 1 -maxdepth 4 \
+            \( -name node_modules -o -name venv -o \( -name '.*' ! -name .git \) \) -prune \
+            -o -name .git -print | sed 's|/\.git$||'
+    done | sort -u
+}
 
 if [[ $# -eq 1 ]]; then
     selected=$1
 else
-    directories=$(cat ~/.tmux-sessionizer-dirs)
-    selected=$(find $directories -mindepth 1 -maxdepth 1 -type d | fzf)
+    selected=$(list_projects | sed "s|^$HOME|~|" | fzf)
+    selected=${selected/#\~/$HOME}
 fi
 
 if [[ -z $selected ]]; then
     exit 0
 fi
 
-selected_name=$(basename "$selected" | tr . _)
-tmux_running=$(pgrep tmux)
+# Session names come from the folder name. If a session with that name already
+# belongs to a different folder (ngd/api vs dev/api), prefix the parent folder.
+name=$(basename "$selected" | tr '.:' '__')
+existing=$(tmux list-sessions -F '#{session_name}	#{session_path}' 2>/dev/null |
+    awk -F'\t' -v n="$name" '$1 == n { print $2 }')
+if [[ -n $existing && $existing != "$selected" ]]; then
+    name="$(basename "$(dirname "$selected")" | tr '.:' '__')_$name"
+fi
 
-if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
-    tmux new-session -s $selected_name -c $selected
+if [[ -z ${TMUX:-} ]] && ! pgrep tmux >/dev/null; then
+    tmux new-session -s "$name" -c "$selected"
     exit 0
 fi
 
-if ! tmux has-session -t=$selected_name 2> /dev/null; then
-    tmux new-session -ds $selected_name -c $selected
+if ! tmux has-session -t="$name" 2>/dev/null; then
+    tmux new-session -ds "$name" -c "$selected"
 fi
 
-tmux switch-client -t $selected_name
+tmux switch-client -t="$name"

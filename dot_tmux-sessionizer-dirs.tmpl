@@ -1,8 +1,0 @@
-{{ .chezmoi.homeDir }}/
-{{ .chezmoi.homeDir }}/dev
-{{ .chezmoi.homeDir }}/.dotfiles
-{{- if eq .machine "work" }}
-{{ .chezmoi.homeDir }}/dev-icfcorp
-{{- else }}
-{{ .chezmoi.homeDir }}/dev/abandoned
-{{- end }}
