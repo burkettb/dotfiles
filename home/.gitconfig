@@ -4,6 +4,22 @@
 	# the account. Work repos override it via the includeIf at the bottom.
 	email = 59125932+burkettb@users.noreply.github.com
 
+# Sign every commit and tag with this Mac's Secretive (Secure Enclave) key.
+# Each Mac has its own key, so ~/.gitconfig.local names it:
+#   [user] signingkey = ~/.ssh/<key>.pub
+# A machine without one turns signing off there: [commit] gpgsign = false
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	# Points ssh-keygen at Secretive's agent, so apps that never ran a shell
+	# (and so lack SSH_AUTH_SOCK) can still sign
+	program = ~/.local/bin/ssh-keygen-secretive
+	allowedSignersFile = ~/.config/git/allowed_signers
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
+
 [init]
 	defaultBranch = main
 

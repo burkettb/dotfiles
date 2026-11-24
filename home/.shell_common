@@ -29,6 +29,13 @@ export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
 
+# SSH agent: Secretive keeps the keys in the Secure Enclave, so nothing can read
+# them, only ask for a signature. ~/.ssh/config (IdentityAgent) and git's
+# ssh-keygen-secretive already point at it; this covers ssh-add and other tools.
+_sock="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+[ -S "$_sock" ] && export SSH_AUTH_SOCK="$_sock"
+unset _sock
+
 # ============================================================================
 # Aliases
 # ============================================================================

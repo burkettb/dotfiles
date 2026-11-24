@@ -86,6 +86,7 @@ cask "docker-desktop"
 cask "zulu@8"               # JDK 8 (java-8 alias)
 cask "spotify"
 cask "bitwarden"
+cask "secretive"            # SSH keys in the Secure Enclave (auth + commit signing)
 cask "firefox"
 cask "google-chrome"
 
