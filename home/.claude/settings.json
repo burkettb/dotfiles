@@ -37,7 +37,11 @@
       "Bash(helm upgrade *)",
       "Bash(helm uninstall *)",
       "Bash(npm publish *)",
-      "Bash(cargo publish *)"
+      "Bash(cargo publish *)",
+      "Edit(~/.dotfiles/home/.claude/settings.json)",
+      "Edit(~/.dotfiles/home/.claude/hooks/**)",
+      "Write(~/.dotfiles/home/.claude/settings.json)",
+      "Write(~/.dotfiles/home/.claude/hooks/**)"
     ],
     "deny": [
       "Read(//**/.env)",
@@ -96,6 +100,10 @@
       "allowRead": [
         "~/.ssh/config",
         "~/.ssh/known_hosts"
+      ],
+      "denyWrite": [
+        "~/.dotfiles/home/.claude/settings.json",
+        "~/.dotfiles/home/.claude/hooks"
       ]
     },
     "network": {

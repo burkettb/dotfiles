@@ -11,7 +11,7 @@
 if [[ -n ${TMUX_SESSIONIZER_ROOTS:-} ]]; then
     IFS=: read -ra roots <<< "$TMUX_SESSIONIZER_ROOTS"
 else
-    roots=("$HOME/dev" "$HOME/dev-icfcorp")
+    roots=("$HOME/dev" "$HOME/dev/abandoned" "$HOME/dev-icfcorp")
 fi
 extras=("$HOME" "$HOME/.dotfiles")
 
@@ -39,15 +39,23 @@ fi
 if [[ -z $selected ]]; then
     exit 0
 fi
+# tmux stores the resolved path, so compare against the same form
+selected=$(cd "$selected" && pwd -P) || exit 1
 
 # Session names come from the folder name. If a session with that name already
-# belongs to a different folder (ngd/api vs dev/api), prefix the parent folder.
-name=$(basename "$selected" | tr '.:' '__')
-existing=$(tmux list-sessions -F '#{session_name}	#{session_path}' 2>/dev/null |
-    awk -F'\t' -v n="$name" '$1 == n { print $2 }')
-if [[ -n $existing && $existing != "$selected" ]]; then
-    name="$(basename "$(dirname "$selected")" | tr '.:' '__')_$name"
-fi
+# belongs to a different folder (ngd/api vs dev/api), try parent_folder, then
+# the whole path under ~.
+session_path() {
+    tmux list-sessions -F '#{session_name}	#{session_path}' 2>/dev/null |
+        awk -F'\t' -v n="$1" '$1 == n { print $2 }'
+}
+base=$(basename "$selected")
+rel=${selected#"$(cd "$HOME" && pwd -P)"/}
+for name in "$base" "$(basename "$(dirname "$selected")")_$base" "${rel//\//_}"; do
+    name=$(printf '%s' "$name" | tr '.:' '__')
+    owner=$(session_path "$name")
+    [[ -z $owner || $owner == "$selected" ]] && break
+done
 
 if [[ -z ${TMUX:-} ]] && ! pgrep tmux >/dev/null; then
     tmux new-session -s "$name" -c "$selected"

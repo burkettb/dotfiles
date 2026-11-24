@@ -11,22 +11,29 @@ the other machine, done.
 # 1. Install Homebrew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# 2. Clone and link
+# 2. SSH: brew install --cask secretive, create a key in it, add the public key
+#    to GitHub (as auth and signing key), then in ~/.ssh/config:
+#      Host *
+#        IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
+#        IdentityFile ~/.ssh/<key>.pub
+#        IdentitiesOnly yes
+
+# 3. Clone and link
 git clone git@github.com:burkettb/dotfiles.git ~/.dotfiles
 ~/.dotfiles/install.sh
 
-# 3. Install apps and tools
+# 4. Install apps and tools
 brew bundle --global
 brew bundle --file ~/.dotfiles/Brewfile.personal   # personal Mac only
 
-# 4. Install tmux plugin manager, then prefix + I inside tmux
+# 5. Install tmux plugin manager, then prefix + I inside tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
-# 5. Install the managed agent plugins and verify the setup
+# 6. Install the managed agent plugins and verify the setup
 agent-bootstrap
 agent-doctor
 
-# 6. Install node (and anything else in ~/.config/mise/config.toml)
+# 7. Install node (and anything else in ~/.config/mise/config.toml)
 mise install
 ```
 
@@ -49,7 +56,7 @@ Never run `chezmoi apply` after pulling this layout.
 | Edit a dotfile | Edit it where it is (`~/.zshrc`) or in `~/.dotfiles/home/`; same file |
 | Track a new dotfile | Move it into `~/.dotfiles/home/` at the same path, then `./install.sh` |
 | Rename or delete a dotfile | Do it in `home/`, then `./install.sh` (removes the stale link) |
-| See what needs attention | Shown in every new terminal, or run `dotfiles-status`: links to update, uncommitted edits, a non-main branch, commits to pull or push |
+| See what needs attention | Shown in every new terminal, or run `dotfiles-status`: links to update, uncommitted edits, a non-main branch, commits to pull or push (as of the last `git fetch`) |
 | Check every link is in place | `./install.sh --check` |
 | Get changes from the other machine | `git pull` (plus `./install.sh` if files were added) |
 | Install/repair agent plugins | `agent-bootstrap` |
@@ -63,6 +70,7 @@ files or skip themselves when a folder doesn't exist:
 | What | Where |
 | --- | --- |
 | git email | GitHub noreply address in the shared `.gitconfig`. Work repos under `~/dev-icfcorp` get the work email from an untracked `~/.gitconfig-icfcorp` on the work Mac |
+| Commit signing | On everywhere, through Secretive. Each Mac's key is its own: `[user] signingkey = ~/.ssh/<key>.pub` in `~/.gitconfig.local` (`install.sh` carries it over from an old `~/.gitconfig`), and its public key goes in `home/.config/git/allowed_signers`. No key: `[commit] gpgsign = false` there instead |
 | Other machine-only git settings | `~/.gitconfig.local` (untracked, optional) |
 | Work-only shell setup, secrets | `~/.shell_local`, sourced at the end of `.shell_common` |
 | tmux-sessionizer folders | Roots that don't exist are skipped; override with `TMUX_SESSIONIZER_ROOTS` in `~/.shell_local` |
@@ -98,7 +106,7 @@ file by file, so `~/.claude` and `~/.codex` keep their own runtime files.
 
 ## Troubleshooting
 
-- **tmux plugins missing**: install TPM (step 4 above), then `prefix + I`
+- **tmux plugins missing**: install TPM (step 5 above), then `prefix + I`
 - **Neovim LSP issues**: `:checkhealth vim.lsp` inside nvim. Language
   servers come from the Brewfile; nvim enables whichever are installed.
 - **Neovim plugins**: `:lua vim.pack.update()` updates them; versions are
@@ -124,7 +132,9 @@ Codex app rewrites it at runtime with machine-local state (plugin caches, trust
 hashes, node_repl paths) that should not be tracked. To re-seed a machine, delete
 the file and run `./install.sh`. Claude's `settings.json` is a link, so changes
 Claude makes to it show up as a diff here; `agent-doctor` verifies the hardening
-keys are present in both.
+keys are present in both. Because that link makes the live permissions and hooks
+editable from this repo, settings.json blocks sandboxed writes to them and asks
+before Edit/Write touches them; change them in a worktree branch instead.
 
 Never commit credentials, OAuth state, API keys, or `.env` contents here.
 Agent configuration references environment-variable names only. Use Keychain or

@@ -16,10 +16,14 @@ claude_plugins=(
 )
 
 # thread-card is read in place from this repo's folder marketplace. Add it only
-# when it's missing: `marketplace add` rewrites the settings path to an
-# absolute one, which then shows up as a diff in the dotfiles repo.
+# when it's missing. `marketplace add` rewrites the path in settings.json (a
+# link into the repo) to this machine's absolute path, so put the portable ~
+# form back, writing through the link.
 if ! claude plugin marketplace list --json | jq -e 'map(select(.name == "dotfiles")) | length == 1' >/dev/null; then
   claude plugin marketplace add "$HOME/.dotfiles/claude-plugins" >/dev/null
+  settings="$HOME/.claude/settings.json"
+  portable=$(jq '.extraKnownMarketplaces.dotfiles.source.path = "~/.dotfiles/claude-plugins"' "$settings")
+  printf '%s\n' "$portable" > "$settings"
 fi
 
 # Prints enabled, disabled or missing for one installed-plugin id.

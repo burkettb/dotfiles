@@ -10,6 +10,12 @@
 set -euo pipefail
 
 repo=$(cd "$(dirname "$0")" && pwd)
+# Links point at whichever checkout runs this, so a worktree or second clone
+# would become the live config and dangle once deleted.
+if [[ $repo != "$HOME/.dotfiles" ]]; then
+    printf 'Run this from ~/.dotfiles, not %s\n' "$repo" >&2
+    exit 1
+fi
 check=false
 [[ ${1:-} == --check ]] && check=true
 backup=""                               # created on first use, unique per run
@@ -63,12 +69,21 @@ link() {
     say "linked ~/$rel"
 }
 
+# The git email and signing key from a ~/.gitconfig this run is about to
+# replace (a chezmoi copy holds whatever email `chezmoi init` asked for)
+old_email="" old_key=""
+if [[ -f $HOME/.gitconfig && ! -L $HOME/.gitconfig ]]; then
+    old_email=$(git config --file "$HOME/.gitconfig" user.email 2>/dev/null || true)
+    old_key=$(git config --file "$HOME/.gitconfig" user.signingkey 2>/dev/null || true)
+fi
+
 # 1. Link everything under home/ that git tracks or would track (skips ignored
-#    junk like .DS_Store)
+#    junk like .DS_Store, and files deleted but not yet committed)
 for d in "${dir_links[@]}"; do
     link "$d"
 done
-linked=$(cd "$repo" && git ls-files --cached --others --exclude-standard home | sed 's|^home/||' | sort -u)
+linked=$(cd "$repo" && git ls-files --cached --others --exclude-standard home | sed 's|^home/||' | sort -u |
+    while IFS= read -r f; do [[ -e $repo/home/$f || -L $repo/home/$f ]] && printf '%s\n' "$f"; done)
 while IFS= read -r f; do
     [[ -n $f ]] || continue
     inside_dir_link "$f" || link "$f"
@@ -101,6 +116,31 @@ if [[ ! -f $HOME/.codex/config.toml ]]; then
         sed "s|__HOME__|$HOME|g" "$repo/seeds/codex-config.toml" > "$HOME/.codex/config.toml"
         chmod 600 "$HOME/.codex/config.toml"
         say "seeded ~/.codex/config.toml"
+    fi
+fi
+
+# 4. Work repos take their email from ~/.gitconfig-icfcorp; without it they'd
+#    commit as the personal address. Carry over the email chezmoi had set.
+work_cfg="$HOME/.gitconfig-icfcorp"
+if [[ -d $HOME/dev-icfcorp && ! -f $work_cfg ]]; then
+    if ! $check && [[ -n $old_email && $old_email != *users.noreply.github.com ]]; then
+        printf '[user]\n\temail = %s\n' "$old_email" > "$work_cfg"
+        say "saved work email $old_email to ~/.gitconfig-icfcorp"
+    else
+        flag "missing: ~/.gitconfig-icfcorp. Create it with: [user] email = <work email>"
+    fi
+fi
+
+# 5. Commits are signed with this Mac's own key, named in ~/.gitconfig.local.
+#    Carry over the one the old ~/.gitconfig had.
+local_cfg="$HOME/.gitconfig.local"
+if [[ -z $(git config --file "$local_cfg" user.signingkey 2>/dev/null) ]]; then
+    if ! $check && [[ -n $old_key ]]; then
+        git config --file "$local_cfg" user.signingkey "$old_key"
+        say "saved signing key $old_key to ~/.gitconfig.local"
+    elif [[ $(git config --global --includes --get commit.gpgsign 2>/dev/null) == true ]] &&
+         [[ -z $(git config --global --includes --get user.signingkey 2>/dev/null) ]]; then
+        flag "no signing key: add [user] signingkey = ~/.ssh/<key>.pub to ~/.gitconfig.local"
     fi
 fi
 

@@ -9,8 +9,11 @@ note() { printf '\033[33mdotfiles: %s\033[0m\n' "$*"; }
 
 # Links: a file was added, renamed, or deleted in home/, or an app replaced a link
 if ! check=$("$repo/install.sh" --check 2>&1); then
-    count=$(printf '%s\n' "$check" | grep -c '^\(not linked\|stale link\|missing\)')
-    note "$count link(s) out of date. Run ~/.dotfiles/install.sh"
+    count=$(printf '%s\n' "$check" | wc -l | tr -d ' ')
+    first=$(printf '%s\n' "$check" | head -1)
+    (( count > 1 )) && first="$first (+$((count - 1)) more)"
+    [[ $first == *gitconfig* ]] || first="$first. Run ~/.dotfiles/install.sh"
+    note "$first"
 fi
 
 # Uncommitted edits: yours, or an app or agent writing through a link
