@@ -14,8 +14,8 @@ fi
 autoload -Uz compinit
 compinit
 
-# FZF integration
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# fzf keybindings: Ctrl-T files, Alt-C dirs. Atuin, loaded later, takes Ctrl-R.
+command -v fzf >/dev/null && source <(fzf --zsh)
 
 # mise: per-project tool versions (replaces nvm). Interactive shells get a
 # hook that switches versions on cd; agent shells (no TTY) get shims, which
