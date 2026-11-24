@@ -80,7 +80,7 @@ fzf.register_ui_select()
 
 -- Treesitter: highlight with whatever parser exists (nvim ships c, lua,
 -- markdown, vim, vimdoc). Installing more parsers needs the tree-sitter CLI.
-local parsers = { "bash", "diff", "go", "html", "javascript", "json", "python", "rust", "tsx", "typescript", "yaml" }
+local parsers = { "bash", "diff", "go", "html", "javascript", "json", "python", "tsx", "typescript", "yaml" }
 if vim.fn.executable("tree-sitter") == 1 then require("nvim-treesitter").install(parsers) end
 vim.api.nvim_create_autocmd("FileType", { callback = function(args)
 	if pcall(vim.treesitter.start, args.buf) then
@@ -94,7 +94,7 @@ vim.lsp.config("lua_ls", { settings = { Lua = {
 	workspace = { library = { vim.env.VIMRUNTIME }, checkThirdParty = false },
 } } })
 for server, bin in pairs({ lua_ls = "lua-language-server", ts_ls = "typescript-language-server",
-	gopls = "gopls", rust_analyzer = "rust-analyzer", ruff = "ruff", pyright = "pyright-langserver" }) do
+	gopls = "gopls", ruff = "ruff", pyright = "pyright-langserver" }) do
 	if vim.fn.executable(bin) == 1 then vim.lsp.enable(server) end
 end
 

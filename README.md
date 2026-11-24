@@ -95,7 +95,7 @@ files or skip themselves when a folder doesn't exist:
 | `home/.codex/` | `~/.codex/AGENTS.md`, `skills/*` | links back to the Claude files, so both agents share one set |
 | `home/.editorconfig` | `~/.editorconfig` | applies to everything under `~` |
 | `home/.Brewfile` | `~/.Brewfile` | `brew bundle --global` |
-| `Brewfile.personal` | not linked | personal-only casks |
+| `Brewfile.personal` | not linked | personal-only apps |
 | `seeds/codex-config.toml` | copied once | see Agent configuration |
 | `claude-plugins/` | read in place | Claude folder marketplace |
 

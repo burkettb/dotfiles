@@ -14,8 +14,8 @@ fi
 autoload -Uz compinit
 compinit
 
-# FZF integration
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# fzf keybindings: Ctrl-T files, Alt-C dirs. Atuin, loaded later, takes Ctrl-R.
+command -v fzf >/dev/null && source <(fzf --zsh)
 
 # mise: per-project tool versions (replaces nvm). Interactive shells get a
 # hook that switches versions on cd; agent shells (no TTY) get shims, which
@@ -23,9 +23,6 @@ compinit
 if command -v mise >/dev/null; then
   if [[ -t 0 ]]; then eval "$(mise activate zsh)"; else eval "$(mise activate zsh --shims)"; fi
 fi
-
-# Zoxide (better cd)
-eval "$(zoxide init zsh)"
 
 # Atuin (better shell history)
 [[ -f /opt/homebrew/bin/atuin ]] && eval "$(atuin init zsh)"

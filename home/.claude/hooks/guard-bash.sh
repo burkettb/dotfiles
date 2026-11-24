@@ -44,7 +44,7 @@ fi
 # 3. outward or destructive actions get a prompt with context
 outward='\bssh\b.*\b(sudo|rsync|rm |mv |cp |chown|chmod|systemctl|nohup|tee )'
 outward="$outward"'|\baws +(ec2 +(start|stop|reboot|terminate|modify|create|delete)|ecs +(update|run-task|stop-task|create|delete|register|deregister)|rds +(modify|delete|reboot|restore|create|start|stop)|iam +(create|put|attach|detach|delete|update|add|remove)|s3 +(rm|sync|cp|mv|rb)|s3api +(put|delete|create)|secretsmanager +(put|update|create|delete|rotate)|ssm +(put|delete|send-command|start-automation)|lambda +(invoke|update|create|delete)|wafv2 +(update|associate|disassociate|create|delete|put)|elbv2 +(create|modify|delete|register|deregister|set)|scheduler +(create|update|delete)|cloudformation +(create|update|delete|deploy)|eks +(update|create|delete)|route53 +change)'
-outward="$outward"'|\bterraform +(apply|destroy|import)|\bgh +pr +(close|reopen|merge)|\bglab +mr +(close|merge|reopen)|\bglab +api +.*(--method|-X) +(PUT|DELETE)'
+outward="$outward"'|\b(terraform|tofu)( +-chdir=[^ ]+)? +(apply|destroy|import)|\bgh +pr +(close|reopen|merge)|\bglab +mr +(close|merge|reopen)|\bglab +api +.*(--method|-X) +(PUT|DELETE)'
 outward="$outward"'|\bgit +push\b.*(--force|-f\b|:refs/heads/)|\bgit +(branch +-D|stash +drop|reset +--hard|rebase +--root|filter-repo|filter-branch)'
 if printf '%s' "$cmd" | grep -Eq "$outward"; then
   decide ask "Outward or destructive action. Name the approved plan step it belongs to before Brandon confirms."
