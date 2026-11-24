@@ -1,0 +1,85 @@
+[user]
+	name = Brandon Burkett
+	# GitHub's private noreply address; GitHub still credits these commits to
+	# the account. Work repos override it via the includeIf at the bottom.
+	email = 59125932+burkettb@users.noreply.github.com
+
+# Sign every commit and tag with this Mac's Secretive (Secure Enclave) key.
+# Each Mac has its own key, so ~/.gitconfig.local names it:
+#   [user] signingkey = ~/.ssh/<key>.pub
+# A machine without one turns signing off there: [commit] gpgsign = false
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	# Points ssh-keygen at Secretive's agent, so apps that never ran a shell
+	# (and so lack SSH_AUTH_SOCK) can still sign
+	program = ~/.local/bin/ssh-keygen-secretive
+	allowedSignersFile = ~/.config/git/allowed_signers
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
+
+[init]
+	defaultBranch = main
+
+[core]
+	editor = nvim
+	excludesfile = ~/.gitignore_global
+	autocrlf = input
+	ignorecase = false
+
+[color]
+	ui = auto
+	branch = auto
+	diff = auto
+	status = auto
+
+[color "branch"]
+	current = yellow reverse
+	local = yellow
+	remote = green
+
+[color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
+
+[color "status"]
+	added = yellow
+	changed = green
+	untracked = cyan
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[pull]
+	rebase = true
+
+[rebase]
+	autoStash = true
+
+[merge]
+	tool = nvimdiff
+	conflictstyle = diff3
+
+[mergetool]
+	prompt = false
+	keepBackup = false
+
+[diff]
+	tool = nvimdiff
+	colorMoved = default
+	
+# Untracked, optional: anything only this machine needs
+[include]
+	path = ~/.gitconfig.local
+
+[url "git@github.com-icfcorp:ICF-Corp/"]
+    insteadOf = git@github.com:ICF-Corp/
+
+# Untracked, work Mac only: [user] email = <work email> for repos under ~/dev-icfcorp
+[includeIf "gitdir:~/dev-icfcorp/"]
+    path = ~/.gitconfig-icfcorp

@@ -1,0 +1,88 @@
+# Copied to ~/.codex/config.toml by install.sh only when that file doesn't exist,
+# with the home-folder placeholder filled in. After that, the Codex app owns the
+# file and rewrites it freely (plugins, marketplaces, node_repl, trust state).
+# To re-seed a machine, delete ~/.codex/config.toml and run ./install.sh.
+
+model = "gpt-5.6-sol"
+personality = "pragmatic"
+model_reasoning_effort = "high"
+approval_policy = "on-request"
+approvals_reviewer = "user"
+default_permissions = "safe-workspace"
+web_search = "cached"
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["chrome-devtools-mcp@latest"]
+default_tools_approval_mode = "prompt"
+enabled = false
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+env_http_headers = { "CONTEXT7_API_KEY" = "CONTEXT7_API_KEY" }
+default_tools_approval_mode = "auto"
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+default_tools_approval_mode = "prompt"
+enabled = false
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+default_tools_approval_mode = "auto"
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_TOKEN"
+default_tools_approval_mode = "writes"
+enabled = false
+
+[apps._default]
+approvals_reviewer = "user"
+default_tools_approval_mode = "writes"
+destructive_enabled = false
+open_world_enabled = false
+
+[shell_environment_policy]
+exclude = ["*API_KEY*", "*PASSWORD*", "*SECRET*", "*TOKEN*", "AWS_*", "DATABASE_URL", "POSTGRES_URL", "REDIS_URL"]
+
+[permissions.safe-workspace]
+extends = ":workspace"
+description = "Workspace access with secrets and credential stores denied"
+
+[permissions.safe-workspace.filesystem]
+glob_scan_max_depth = 20
+"__HOME__/dev/devcenter-personal" = "write"
+"__HOME__/.ssh/id_*" = "deny"
+"__HOME__/.aws" = "deny"
+"__HOME__/.gnupg" = "deny"
+"__HOME__/.kube" = "deny"
+"__HOME__/.config/gcloud" = "deny"
+"__HOME__/.docker/config.json" = "deny"
+"__HOME__/Library/Keychains" = "deny"
+
+[permissions.safe-workspace.filesystem.":workspace_roots"]
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"**/secrets/**" = "deny"
+"**/.secrets/**" = "deny"
+"**/credentials/**" = "deny"
+"**/.npmrc" = "deny"
+"**/.pypirc" = "deny"
+"**/.netrc" = "deny"
+"**/.git-credentials" = "deny"
+"**/*.pem" = "deny"
+"**/*.key" = "deny"
+"**/*.p12" = "deny"
+"**/*.pfx" = "deny"
+
+[features]
+multi_agent = true
+js_repl = false
+
+[desktop]
+preventSleepWhileRunning = true
+keepRemoteControlAwakeWhilePluggedIn = true
+followUpQueueMode = "queue"
+dock-icon-preference = "codex-system"

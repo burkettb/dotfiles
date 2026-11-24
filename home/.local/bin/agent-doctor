@@ -1,0 +1,100 @@
+#!/bin/zsh
+
+set -u
+
+failures=0
+warnings=0
+
+pass() { printf 'PASS  %s\n' "$1"; }
+fail() { printf 'FAIL  %s\n' "$1"; failures=$((failures + 1)); }
+warn() { printf 'WARN  %s\n' "$1"; warnings=$((warnings + 1)); }
+
+require_command() {
+  if command -v "$1" >/dev/null 2>&1; then
+    pass "$1 is installed"
+  else
+    fail "$1 is not installed"
+  fi
+}
+
+for command_name in jq rg git codex claude devcenter; do
+  require_command "$command_name"
+done
+
+if dotfiles_check=$("$HOME/.dotfiles/install.sh" --check 2>&1); then
+  pass 'every dotfile is linked into the repo'
+else
+  warn 'some dotfiles are not linked; run ~/.dotfiles/install.sh'
+  printf '%s\n' "$dotfiles_check"
+fi
+
+if jq empty "$HOME/.claude/settings.json" >/dev/null 2>&1; then
+  pass 'Claude settings are valid JSON'
+else
+  fail 'Claude settings are invalid JSON'
+fi
+
+# `codex plugin list` parses config.toml and fails on invalid TOML;
+# `codex --help` exits 0 regardless and proves nothing.
+if codex plugin list >/dev/null 2>&1; then
+  pass 'Codex parses the managed config'
+else
+  fail 'Codex could not parse the managed config'
+fi
+
+claude_plugin_json=$(claude plugin list --json 2>/dev/null) || claude_plugin_json='[]'
+for plugin in 'typescript-lsp@claude-plugins-official' 'codex@openai-codex' 'thread-card@dotfiles'; do
+  if jq -e --arg p "$plugin" 'map(select(.id == $p and .enabled == true)) | length == 1' <<<"$claude_plugin_json" >/dev/null; then
+    pass "Claude plugin enabled: $plugin"
+  else
+    fail "Claude plugin not enabled: $plugin"
+  fi
+  if claude plugin details "$plugin" >/dev/null 2>&1; then
+    pass "Claude plugin resolves: $plugin"
+  else
+    fail "Claude plugin details failed: $plugin"
+  fi
+done
+
+for required_file in \
+  "$HOME/.codex/AGENTS.md" \
+  "$HOME/.codex/config.toml" \
+  "$HOME/.claude/CLAUDE.md" \
+  "$HOME/.claude/settings.json"; do
+  if [[ -f "$required_file" ]]; then
+    pass "$required_file exists"
+  else
+    fail "$required_file is missing"
+  fi
+done
+
+if rg -q 'default_permissions = "safe-workspace"' "$HOME/.codex/config.toml" && \
+   rg -q '"disableBypassPermissionsMode": "disable"' "$HOME/.claude/settings.json"; then
+  pass 'permission hardening is present'
+else
+  fail 'permission hardening is missing'
+fi
+
+if rg -q 'github_pat_|ghp_[A-Za-z0-9]|ctx7sk-|BEGIN .*PRIVATE KEY' \
+  "$HOME/.codex/config.toml" "$HOME/.claude/settings.json"; then
+  fail 'a plaintext credential pattern was found in managed agent config'
+else
+  pass 'no known plaintext credential patterns found'
+fi
+
+# settings.json is a public file in the repo, so only the Codex config, which
+# Codex fills with machine-local state, needs to stay private.
+if [[ "$(stat -f '%Lp' "$HOME/.codex/config.toml" 2>/dev/null)" == '600' ]]; then
+  pass 'Codex config is mode 0600'
+else
+  fail 'Codex config is not mode 0600'
+fi
+
+if devcenter_home=$(devcenter home 2>/dev/null) && [[ -n "$devcenter_home" ]]; then
+  pass "DevCenter home: $devcenter_home"
+else
+  warn 'DevCenter home is not configured'
+fi
+
+printf '\n%d failure(s), %d warning(s)\n' "$failures" "$warnings"
+(( failures == 0 ))
