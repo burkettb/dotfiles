@@ -38,7 +38,7 @@ brew "uv"                   # Python packages, venvs, CLI apps (uv tool install)
 brew "gh"
 brew "jq"                   # Required by agent-doctor, agent-bootstrap, guard-bash.sh
 brew "awscli"
-brew "terraform"
+brew "opentofu"             # tofu: open-source Terraform fork (homelab-infra)
 brew "ansible"              # homelab-infra playbooks
 brew "kubernetes-cli"       # kubectl for the homelab cluster
 brew "rclone"               # Cloud storage sync (homelab tfstate backups)
