@@ -84,6 +84,7 @@ if [ -t 0 ]; then
     alias rm="rm -i"
     alias cp="cp -i"
     alias mv="mv -i"
+    alias cat="bat --paging=never"   # \cat or command cat for the real one
 fi
 alias mkdir="mkdir -pv"
 
