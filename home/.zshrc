@@ -24,9 +24,6 @@ if command -v mise >/dev/null; then
   if [[ -t 0 ]]; then eval "$(mise activate zsh)"; else eval "$(mise activate zsh --shims)"; fi
 fi
 
-# Zoxide (better cd)
-eval "$(zoxide init zsh)"
-
 # Atuin (better shell history)
 [[ -f /opt/homebrew/bin/atuin ]] && eval "$(atuin init zsh)"
 

@@ -1,96 +1,68 @@
 # Shared by every machine. Linked to ~/.Brewfile, so run: brew bundle --global
-# Personal-only apps live in ~/.dotfiles/Brewfile.personal.
+# Every CLI and dev tool goes here, plus apps wanted on any Mac (work included).
+# Personal-life apps live in ~/.dotfiles/Brewfile.personal.
 
-# Taps
-tap "homebrew/services"
-
-# Core tools
+# Core
 brew "git"
-brew "zsh"
 brew "tmux"
 brew "neovim"
+brew "mise"                 # Per-project node/pnpm/python/java versions (~/.config/mise)
 
-# Shell enhancements
+# Shell
 brew "starship"             # Prompt (~/.config/starship.toml)
-brew "zsh-syntax-highlighting"
 brew "zsh-autosuggestions"
-brew "fzf"
-brew "fd"                    # Better find
-brew "ripgrep"              # Better grep
-brew "ripgrep-all"          # rg over PDFs, docs, archives (used by fif)
-brew "bat"                  # Better cat
-brew "eza"                  # Better ls
-brew "zoxide"               # Better cd
-brew "atuin"                # Better shell history
+brew "zsh-syntax-highlighting"
+brew "atuin"                # History search on Up arrow and Ctrl-R
+brew "fzf"                  # Fuzzy picker (tmux-sessionizer, nvim, Ctrl-T)
+brew "fd"                   # Faster find; feeds fzf and nvim's file picker
+brew "ripgrep"              # Faster grep; nvim search, agents
+brew "ripgrep-all"          # rg inside PDFs, docs, archives (fif, tmux prefix g)
+brew "poppler"              # pdftotext, so rga can read PDFs
+brew "eza"                  # ls replacement (ls wrapper in .shell_common)
+brew "bat"                  # cat with syntax highlighting (cat alias)
 
-# Development tools
-brew "mise"                 # Per-project tool versions (node etc.); replaces nvm
-brew "python"
-brew "go"
-brew "rust"
-brew "docker"
-brew "docker-compose"
-
-# Infrastructure / ops
-brew "ansible"
-brew "awscli"
-brew "bitwarden-cli"
-brew "caddy"
-brew "dnsmasq"
-brew "terraform"
-
-# Language servers and formatters (Neovim enables whichever are installed)
+# Neovim: enables whichever language servers are installed
+brew "tree-sitter-cli"      # Builds nvim-treesitter parsers
 brew "lua-language-server"
 brew "stylua"
 brew "typescript-language-server"
-brew "prettier"
-brew "eslint"
-brew "black"
-brew "ruff"
-brew "pipx"  # Python application installer
 brew "gopls"
-brew "rust-analyzer"
-brew "tree-sitter-cli"      # lets nvim-treesitter build parsers
+brew "ruff"                 # Python lint, format, and language server
 
-# Utilities
-brew "jq"                   # JSON processor
-brew "yq"                   # YAML processor
-brew "gh"                   # GitHub CLI
-brew "lazygit"             # Terminal UI for git
-brew "lazydocker"          # Terminal UI for docker
-brew "htop"                # Process viewer
-brew "ncdu"                # Disk usage
-brew "tldr"                # Simplified man pages
-brew "tree"                # Directory listing
-brew "wget"
-brew "curl"
-brew "gnupg"
-brew "pass"                # Password manager
+# Languages
+brew "go"
+brew "python"
+brew "uv"                   # Python packages, venvs, CLI apps (uv tool install)
 
-# Database clients
-brew "postgresql@14"
-brew "mysql-client"
-brew "redis"
+# CLIs
+brew "gh"
+brew "jq"                   # Required by agent-doctor, agent-bootstrap, guard-bash.sh
+brew "awscli"
+brew "terraform"
+brew "ansible"              # homelab-infra playbooks
+brew "kubernetes-cli"       # kubectl for the homelab cluster
+brew "rclone"               # Cloud storage sync (homelab tfstate backups)
+brew "ffmpeg"
+brew "mas"                  # Mac App Store installs (mas lines in Brewfile.personal)
 
-# macOS specific tools
-brew "mas"                  # Mac App Store CLI
-brew "trash"               # Move to trash instead of rm
+# portless: *.test hostnames for local dev servers
+brew "caddy"                # Reverse proxy with automatic local HTTPS
+brew "dnsmasq"              # Resolves *.test to this Mac
+brew "mkcert"               # Locally trusted certificates
 
-# Casks (GUI applications)
+# Apps
+cask "docker-desktop"       # Ships the docker, docker compose, and kubectl CLIs
 cask "iterm2"
-cask "kitty"
-cask "linearmouse"
 cask "visual-studio-code"
 cask "codex"
-cask "docker-desktop"
-cask "zulu@8"               # JDK 8 (java-8 alias)
-cask "spotify"
-cask "bitwarden"
+cask "t3-code@nightly"
+cask "claude"
+cask "chatgpt"
+cask "linearmouse"
 cask "secretive"            # SSH keys in the Secure Enclave (auth + commit signing)
+cask "bitwarden"
 cask "firefox"
 cask "google-chrome"
 
 # Fonts
-cask "font-jetbrains-mono-nerd-font"
-cask "font-fira-code-nerd-font"
-cask "font-meslo-lg-nerd-font"
+cask "font-meslo-lg-nerd-font"   # iTerm's font
