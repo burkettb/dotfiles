@@ -23,7 +23,6 @@
       "Edit(//Users/brandon/dev/devcenter-personal/**)"
     ],
     "ask": [
-      "Bash(git push *)",
       "Bash(gh pr merge *)",
       "Bash(git reset --hard *)",
       "Bash(git clean -f *)",
@@ -66,8 +65,7 @@
       "Read(~/Library/Keychains/**)"
     ],
     "additionalDirectories": [
-      "~/dev/devcenter-work",
-      "~/dev/devcenter-personal"
+      "~/dev"
     ]
   },
   "sandbox": {
