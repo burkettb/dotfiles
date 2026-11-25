@@ -33,6 +33,14 @@ fi
 # Prompt (config: ~/.config/starship.toml)
 command -v starship >/dev/null && eval "$(starship init zsh)"
 
+# Inside tmux, mark where each command's output starts (OSC 133;C) so the
+# prefix y / Y bindings in .tmux.conf can find and copy it
+if [[ -n $TMUX && -t 0 ]]; then
+  autoload -Uz add-zsh-hook
+  _tmux_mark_output() { print -n '\e]133;C\e\\' }
+  add-zsh-hook preexec _tmux_mark_output
+fi
+
 # ZSH plugins (syntax highlighting must be sourced last)
 source ${HOMEBREW_PREFIX:-/opt/homebrew}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 source ${HOMEBREW_PREFIX:-/opt/homebrew}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
