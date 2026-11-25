@@ -65,8 +65,7 @@
       "Read(~/Library/Keychains/**)"
     ],
     "additionalDirectories": [
-      "~/dev/devcenter-work",
-      "~/dev/devcenter-personal"
+      "~/dev"
     ]
   },
   "sandbox": {
