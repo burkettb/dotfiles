@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Says what needs attention in ~/.dotfiles and prints nothing when all is well.
 # ~/.zshrc runs this in every new terminal. Offline: "to pull" counts only what
-# the last git fetch saw.
+# the last fetch saw (dotsync fetches every 15 minutes from any prompt).
+#
+#   dotfiles-status         one line per problem
+#   dotfiles-status --tmux  a compact status-bar segment, e.g. "dotfiles ↓2 ●1"
 repo="$HOME/.dotfiles"
 [[ -x $repo/install.sh ]] || exit 0
-
-note() { printf '\033[33mdotfiles: %s\033[0m\n' "$*"; }
+tmux=false
+[[ ${1:-} == --tmux ]] && tmux=true
+notes=() marks=()
 
 # Links: a file was added, renamed, or deleted in home/, or an app replaced a link
 if ! check=$("$repo/install.sh" --check 2>&1); then
@@ -13,7 +17,8 @@ if ! check=$("$repo/install.sh" --check 2>&1); then
     first=$(printf '%s\n' "$check" | head -1)
     (( count > 1 )) && first="$first (+$((count - 1)) more)"
     [[ $first == *gitconfig* ]] || first="$first. Run ~/.dotfiles/install.sh"
-    note "$first"
+    notes+=("$first")
+    marks+=("links")
 fi
 
 # Uncommitted edits: yours, or an app or agent writing through a link
@@ -22,18 +27,35 @@ if [[ -n $changed ]]; then
     count=$(printf '%s\n' "$changed" | wc -l | tr -d ' ')
     names=$(printf '%s\n' "$changed" | head -3 | paste -sd ',' - | sed 's/,/, /g')
     (( count > 3 )) && names="$names, ..."
-    note "$count uncommitted: $names"
+    notes+=("$count uncommitted: $names")
+    marks+=("●$count")
 fi
 
 # The checked-out branch is the live config, so say when it isn't main
 branch=$(git -C "$repo" branch --show-current 2>/dev/null)
-[[ -n $branch && $branch != main ]] && note "on branch $branch, and that is your live config"
+if [[ -n $branch && $branch != main ]]; then
+    notes+=("on branch $branch, and that is your live config")
+    marks+=("$branch")
+fi
 
 # Commits waiting either way
 if counts=$(git -C "$repo" rev-list --left-right --count 'HEAD...@{upstream}' 2>/dev/null); then
     ahead=${counts%%[[:space:]]*}
     behind=${counts##*[[:space:]]}
-    (( behind > 0 )) && note "$behind commit(s) to pull"
-    (( ahead > 0 )) && note "$ahead commit(s) not pushed"
+    if (( behind > 0 )); then
+        notes+=("$behind commit(s) to pull. Run dotsync")
+        marks+=("↓$behind")
+    fi
+    if (( ahead > 0 )); then
+        notes+=("$ahead commit(s) not pushed")
+        marks+=("↑$ahead")
+    fi
+fi
+
+if $tmux; then
+    # Catppuccin mocha yellow, matching the separators in ~/.tmux.conf
+    (( ${#marks[@]} )) && printf '#[bg=#181825,fg=#f9e2af] dotfiles %s #[fg=#6c7086]│' "${marks[*]}"
+else
+    for n in "${notes[@]}"; do printf '\033[33mdotfiles: %s\033[0m\n' "$n"; done
 fi
 exit 0
