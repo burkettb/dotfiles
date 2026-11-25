@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Brings ~/.dotfiles up to date with GitHub when that's safe, says why when it
+# isn't, then lists anything else that needs attention (dotfiles-status). Safe
+# means on main, no uncommitted edits to tracked files, and GitHub's main only
+# adds commits (a fast-forward). Fetches over HTTPS (the repo is public), so it
+# never asks the SSH agent for a key or Touch ID.
+#
+#   dotsync          fetch, update, relink, and print what changed
+#   dotsync --quiet  same, but silent unless it changes something, which goes
+#                    to ~/.local/state/dotfiles/sync.log. Every shell prompt
+#                    runs this in the background at most every 15 minutes
+#                    (see ~/.zshrc).
+set -uo pipefail
+repo="$HOME/.dotfiles"
+[[ -x $repo/install.sh ]] || exit 0
+quiet=false
+[[ ${1:-} == --quiet ]] && quiet=true
+state="$HOME/.local/state/dotfiles"
+mkdir -p "$state"
+touch "$state/last-sync"                # the shell's throttle, success or not
+
+say() { $quiet || printf '%s\n' "$*"; }
+# Every exit ends with the status lines, unless running in the background
+done_() {
+    $quiet || "$(dirname "$0")/dotfiles-status"
+    exit "${1:-0}"
+}
+export GIT_TERMINAL_PROMPT=0            # fail instead of waiting on a prompt
+
+url=$(git -C "$repo" remote get-url origin) || exit 1
+[[ $url == git@github.com:* ]] && url="https://github.com/${url#git@github.com:}"
+if ! git -C "$repo" fetch --quiet "$url" '+refs/heads/main:refs/remotes/origin/main'; then
+    say "fetch failed (offline?)"
+    done_ 1
+fi
+
+behind=$(git -C "$repo" rev-list --count HEAD..origin/main)
+if (( behind == 0 )); then
+    say "up to date"
+    done_
+fi
+branch=$(git -C "$repo" branch --show-current)
+if [[ $branch != main ]]; then
+    say "$behind new on main, not applied: ~/.dotfiles is on $branch"
+    done_
+fi
+if [[ -n $(git -C "$repo" status --porcelain --untracked-files=no) ]]; then
+    say "$behind new on main, not applied: uncommitted edits in ~/.dotfiles"
+    done_
+fi
+
+old=$(git -C "$repo" rev-parse HEAD)
+if ! git -C "$repo" merge --ff-only --quiet origin/main 2>/dev/null; then
+    say "$behind new on main, not applied: local commits on main. Run git -C ~/.dotfiles pull --rebase"
+    done_
+fi
+
+if $quiet; then
+    exec >>"$state/sync.log" 2>&1
+    printf '\n%s\n' "$(date '+%F %T')"
+fi
+printf 'updated ~/.dotfiles:\n'
+git -C "$repo" log --oneline --no-decorate "$old..HEAD"
+# New, renamed, or deleted files under home/ need their links redone
+"$repo/install.sh" --check >/dev/null 2>&1 || "$repo/install.sh"
+done_

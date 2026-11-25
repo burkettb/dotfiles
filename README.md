@@ -56,9 +56,9 @@ Never run `chezmoi apply` after pulling this layout.
 | Edit a dotfile | Edit it where it is (`~/.zshrc`) or in `~/.dotfiles/home/`; same file |
 | Track a new dotfile | Move it into `~/.dotfiles/home/` at the same path, then `./install.sh` |
 | Rename or delete a dotfile | Do it in `home/`, then `./install.sh` (removes the stale link) |
-| See what needs attention | Shown in every new terminal, or run `dotfiles-status`: links to update, uncommitted edits, a non-main branch, commits to pull or push (as of the last `git fetch`) |
+| See what needs attention | The tmux status bar (e.g. `dotfiles ●1 ↓2`, empty when all is well), every new terminal, or `dotfiles-status`: links to update, uncommitted edits, a non-main branch, commits to pull or push |
 | Check every link is in place | `./install.sh --check` |
-| Get changes from the other machine | `git pull` (plus `./install.sh` if files were added) |
+| Get changes from the other machine | Automatic: a shell prompt runs `dotsync --quiet` in the background at most every 15 minutes, which fast-forwards main and relinks when there are no local edits or commits. Run `dotsync` to do it now and see what's blocking it. Background updates are logged in `~/.local/state/dotfiles/sync.log` |
 | Install/repair agent plugins | `agent-bootstrap` |
 | Verify agent configuration | `agent-doctor` |
 
