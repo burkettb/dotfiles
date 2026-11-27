@@ -76,6 +76,8 @@ files or skip themselves when a folder doesn't exist:
 | tmux-sessionizer folders | Roots that don't exist are skipped; override with `TMUX_SESSIONIZER_ROOTS` in `~/.shell_local` |
 | Personal-only apps | `Brewfile.personal`, run by hand |
 | Codex config | `~/.codex/config.toml`, seeded once from `seeds/` |
+| What agents should know about this machine (headless, reached remotely) | `~/.config/agent/machine.md`, loaded by a Claude `SessionStart` hook; Codex is told to read it |
+| Agent box (full-access agents, no Seatbelt sandbox) | `sudo cp seeds/claude-agent-box.json "/Library/Application Support/ClaudeCode/managed-settings.json"`. Managed settings outrank `~/.claude/settings.json` and are root-owned, so agents can't loosen them. In `~/.codex/config.toml`, replace `default_permissions = "safe-workspace"` with `sandbox_mode = "danger-full-access"` |
 
 ## What's here
 
