@@ -39,9 +39,6 @@ setup_ssh_session() {
     # Set session environment variable for the SSH host
     tmux set-environment -t "$session_name" SSH_DEFAULT_HOST "$host"
     
-    # Create a hook that automatically SSH's into the host for new windows
-    tmux set-hook -t "$session_name" after-new-window "send-keys 'ssh $host' Enter"
-    
     # Set the default command for new panes in this session
     tmux set-option -t "$session_name" default-command "ssh $host"
     

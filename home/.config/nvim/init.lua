@@ -31,7 +31,6 @@ vim.pack.add({
 	gh("stevearc/oil.nvim"),
 	gh("lewis6991/gitsigns.nvim"),
 	gh("tpope/vim-fugitive"),
-	gh("christoomey/vim-tmux-navigator"), -- Ctrl-hjkl across nvim and tmux panes
 	gh("stevearc/conform.nvim"),
 	gh("neovim/nvim-lspconfig"), -- only for its lsp/<server>.lua defaults
 	{ src = gh("nvim-treesitter/nvim-treesitter"), version = "main" },
