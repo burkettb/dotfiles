@@ -30,17 +30,6 @@ fi
 # Flag anything in ~/.dotfiles that needs attention (silent when all is well)
 [[ -t 0 ]] && command -v dotfiles-status >/dev/null && dotfiles-status
 
-# Keep ~/.dotfiles current: a prompt starts dotsync in the background (fetch,
-# then fast-forward when safe) if it hasn't run in 15 minutes
-if [[ -t 0 ]] && command -v dotsync >/dev/null; then
-  autoload -Uz add-zsh-hook
-  _dotfiles_sync() {
-    local -a fresh=(~/.local/state/dotfiles/last-sync(Nmm-15))
-    (( $#fresh )) || (dotsync --quiet &>/dev/null &)
-  }
-  add-zsh-hook precmd _dotfiles_sync
-fi
-
 # Prompt (config: ~/.config/starship.toml)
 command -v starship >/dev/null && eval "$(starship init zsh)"
 

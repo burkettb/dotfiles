@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Says what needs attention in ~/.dotfiles and prints nothing when all is well.
-# ~/.zshrc runs this in every new terminal. Offline: "to pull" counts only what
-# the last fetch saw (dotsync fetches every 15 minutes from any prompt).
+# New terminals, the tmux status bar and every new Claude session run this.
+# "Behind" counts what the last fetch saw; the dotsync LaunchAgent fetches every
+# 15 minutes, and this says so when those fetches stop working.
 #
 #   dotfiles-status         one line per problem
 #   dotfiles-status --tmux  a compact status-bar segment, e.g. "dotfiles ↓2 ●1"
@@ -38,24 +39,44 @@ if [[ -n $branch && $branch != main ]]; then
     marks+=("$branch")
 fi
 
-# Commits waiting either way
-if counts=$(git -C "$repo" rev-list --left-right --count 'HEAD...@{upstream}' 2>/dev/null); then
+# Commits waiting either way, against the last fetched main. The message pins
+# the commit, so applying can't pick up anything fetched after the review.
+if counts=$(git -C "$repo" rev-list --left-right --count 'HEAD...origin/main' 2>/dev/null); then
     ahead=${counts%%[[:space:]]*}
     behind=${counts##*[[:space:]]}
     if (( behind > 0 )); then
-        notes+=("$behind commit(s) to pull. Run dotsync")
+        (( behind == 1 )) && n="1 commit" || n="$behind commits"
+        tip=$(git -C "$repo" rev-parse --short origin/main)
+        notes+=("~/.dotfiles is $n behind main: review with git -C ~/.dotfiles log -p HEAD..$tip, then dotsync --apply $tip")
         marks+=("↓$behind")
     fi
     if (( ahead > 0 )); then
-        notes+=("$ahead commit(s) not pushed")
+        notes+=("$ahead commit(s) not on main")
         marks+=("↑$ahead")
     fi
+fi
+
+# Background fetches: not set up on this Mac, not running, or failing
+# (offline, GitHub down). Any of those would hide new commits on main.
+state="$HOME/.local/state/dotfiles"
+old() { [[ ! -f $1 || -n $(find "$1" -mmin +60 2>/dev/null) ]]; }
+if [[ ! -f $HOME/Library/LaunchAgents/com.burkettb.dotsync.plist ]]; then
+    notes+=("nothing checks GitHub for changes. Run dotsync --install-agent once")
+    marks+=("no-agent")
+elif old "$state/last-attempt"; then
+    notes+=("the dotsync LaunchAgent isn't running. Run dotsync --install-agent")
+    marks+=("no-agent")
+elif old "$state/last-success"; then
+    notes+=("no successful fetch since $(cat "$state/last-success" 2>/dev/null || echo install). See ~/.local/state/dotfiles/sync.log")
+    marks+=("fetch?")
 fi
 
 if $tmux; then
     # Catppuccin mocha yellow, matching the separators in ~/.tmux.conf
     (( ${#marks[@]} )) && printf '#[bg=#181825,fg=#f9e2af] dotfiles %s #[fg=#6c7086]│' "${marks[*]}"
 else
-    for n in "${notes[@]}"; do printf '\033[33mdotfiles: %s\033[0m\n' "$n"; done
+    # Yellow in a terminal, plain text for agents reading it from a hook
+    if [[ -t 1 ]]; then fmt='\033[33mdotfiles: %s\033[0m\n'; else fmt='dotfiles: %s\n'; fi
+    for n in "${notes[@]}"; do printf "$fmt" "$n"; done
 fi
 exit 0

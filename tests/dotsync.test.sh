@@ -1,27 +1,50 @@
 #!/usr/bin/env bash
 # Runs dotsync and dotfiles-status against a fake $HOME whose ~/.dotfiles
-# clones a throwaway copy of this repo. Touches nothing outside $TMPDIR.
+# clones a throwaway repo seeded from this working tree, uncommitted edits
+# included. launchctl is a stub, so nothing reaches the real launchd. Touches
+# nothing outside $TMPDIR.
 #   tests/dotsync.test.sh
 set -u
-bin="$(cd "$(dirname "$0")/.." && pwd)/home/.local/bin"
 src="$(cd "$(dirname "$0")/.." && pwd)"
-tmp=$(cd "$(mktemp -d "${TMPDIR:-/tmp}/sync-test.XXXX")" && pwd)   # drop the // from macOS's trailing-slash TMPDIR
-trap 'rm -rf "$tmp"' EXIT
+bin="$src/home/.local/bin"
+tmp=${TMPDIR:-/tmp}
+tmp=$(mktemp -d "${tmp%/}/sync-test.XXXX")   # no "//": install.sh compares paths
+trap 'chmod -R u+w "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export HOME="$tmp/home"
-mkdir -p "$HOME"
+mkdir -p "$HOME" "$tmp/stub"
+gitc() { git -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false "$@"; }
 
-git init -q --bare -b main "$tmp/remote.git"
-git -C "$tmp/remote.git" fetch -q "$src" HEAD:refs/heads/main   # test this checkout, not local main
+# launchctl stub: records each call, fails bootout like an unloaded job would
+cat > "$tmp/stub/launchctl" <<EOF
+#!/bin/sh
+echo "\$*" >> "$tmp/launchctl.calls"
+[ "\$1" = bootout ] && exit 3
+exit 0
+EOF
+chmod +x "$tmp/stub/launchctl"
+export PATH="$tmp/stub:$PATH"
+
+# The "GitHub" remote's main is this working tree, so the fixture's installer
+# is the one on this branch, not main's
+mkdir "$tmp/seed"
+(cd "$src" && git ls-files -z --cached --others --exclude-standard |
+    while IFS= read -r -d '' f; do [[ -e $f || -L $f ]] && printf '%s\0' "$f"; done |
+    tar -cf - --null -T -) | tar -xf - -C "$tmp/seed"
+git -C "$tmp/seed" init -q -b main
+git -C "$tmp/seed" add -A
+gitc -C "$tmp/seed" commit -q -m seed
+git clone -q --bare "$tmp/seed" "$tmp/remote.git"
 git clone -q -b main "$tmp/remote.git" "$HOME/.dotfiles"
 "$HOME/.dotfiles/install.sh" >/dev/null
-git clone -q -b main "$tmp/remote.git" "$tmp/other"     # the other Mac, pushing changes
+git clone -q -b main "$tmp/remote.git" "$tmp/other"     # where PRs get merged
 commit() { # commit <clone> <file> [content]
+    mkdir -p "$(dirname "$1/$2")"
     printf '%s\n' "${3:-x}" > "$1/$2"
     git -C "$1" add "$2"
-    git -C "$1" -c user.name=t -c user.email=t@example.com commit -q -m "change $2"
+    gitc -C "$1" commit -q -m "change $2"
 }
-push_from_other() { commit "$tmp/other" "$@" && git -C "$tmp/other" push -q origin main; }
+merge_on_github() { commit "$tmp/other" "$@" && git -C "$tmp/other" push -q origin main; }
 
 fail=0
 expect() { # expect <description> <want substring, or "" for empty> <got>
@@ -32,47 +55,166 @@ expect() { # expect <description> <want substring, or "" for empty> <got>
         fail=1
     fi
 }
+check() { # check <description> <command...>
+    if "${@:2}"; then echo "ok    $1"; else echo "FAIL  $1"; fail=1; fi
+}
 sync() { "$bin/dotsync" "$@" 2>&1; }
 status() { "$bin/dotfiles-status" "$@" 2>&1; }
+head_() { git -C "$HOME/.dotfiles" rev-parse HEAD; }
+state="$HOME/.local/state/dotfiles"
+log="$state/sync.log"
 
+# LaunchAgent
+expect "status asks for the agent" "dotsync --install-agent" "$(status)"
+out=$(sync --install-agent)
+plist="$HOME/Library/LaunchAgents/com.burkettb.dotsync.plist"
+expect "install-agent loads it" "loaded $plist" "$out"
+check "plist is a real file" test -f "$plist" -a ! -L "$plist"
+check "plist is valid" plutil -lint -s "$plist"
+check "plist runs dotsync --quiet by absolute path" \
+    grep -q "<string>$HOME/.local/bin/dotsync</string>" "$plist"
+check "plist every 15 minutes, at load" grep -q '<integer>900</integer>' "$plist"
+check "plist sets PATH" grep -q '<key>PATH</key>' "$plist"
+uid=$(id -u)
+expect "bootout then bootstrap" "bootout gui/$uid/com.burkettb.dotsync
+bootstrap gui/$uid $plist" "$(cat "$tmp/launchctl.calls")"
+cp "$plist" "$tmp/plist.1"
+sync --install-agent >/dev/null
+check "install-agent is idempotent" cmp -s "$plist" "$tmp/plist.1"
+sync --uninstall-agent >/dev/null
+check "uninstall-agent removes it" test ! -e "$plist"
+expect "uninstall-agent boots it out" "bootout gui/$uid/com.burkettb.dotsync" "$(tail -1 "$tmp/launchctl.calls")"
+check "uninstall-agent twice is fine" "$bin/dotsync" --uninstall-agent >/dev/null
+sync --install-agent >/dev/null
+
+# Default run: fetch only
 expect "up to date" "up to date" "$(sync)"
+expect "status empty when clean" "" "$(status)"
 expect "tmux segment empty when clean" "" "$(status --tmux)"
+check "records last attempt" test -s "$state/last-attempt"
+check "records last success" test -s "$state/last-success"
 
-push_from_other home/.sync-test-a
-git -C "$HOME/.dotfiles" fetch -q
-expect "tmux shows commits to pull" "↓1" "$(status --tmux)"
+merge_on_github home/.sync-test-a
+before=$(head_)
 out=$(sync)
-expect "fast-forwards" "change home/.sync-test-a" "$out"
-expect "links the new file" "linked ~/.sync-test-a" "$out"
-[[ -L $HOME/.sync-test-a ]] && echo "ok    new file is a link" || { echo "FAIL  ~/.sync-test-a not linked"; fail=1; }
-expect "tmux empty after sync" "" "$(status --tmux)"
+expect "lists what's waiting" "change home/.sync-test-a" "$out"
+tip=$(git -C "$HOME/.dotfiles" rev-parse --short origin/main)
+expect "says how to review and apply, pinned" \
+    "~/.dotfiles is 1 commit behind main: review with git -C ~/.dotfiles log -p HEAD..$tip, then dotsync --apply $tip" "$out"
+expect "default run never moves HEAD" "$before" "$(head_)"
+check "default run links nothing" test ! -e "$HOME/.sync-test-a"
+expect "tmux shows commits behind" "↓1" "$(status --tmux)"
 
-push_from_other home/.sync-test-a y
+merge_on_github home/.sync-test-b
+expect "quiet prints nothing" "" "$(sync --quiet)"
+expect "quiet never moves HEAD" "$before" "$(head_)"
+expect "quiet logs new commits" "change home/.sync-test-b" "$(cat "$log")"
+lines=$(wc -l < "$log")
+sync --quiet >/dev/null
+expect "quiet no-op logs nothing" "$lines" "$(wc -l < "$log")"
+expect "plural" "2 commits behind main" "$(status)"
+
+# --apply
+reviewed=$(git -C "$HOME/.dotfiles" rev-parse origin/main~1)
+out=$(sync --apply "$reviewed")
+expect "apply stops at the reviewed commit" "$reviewed" "$(head_)"
+expect "apply relinks" "linked ~/.sync-test-a" "$out"
+check "new file is a link" test -L "$HOME/.sync-test-a"
+merge_on_github home/.sync-test-c
+out=$(sync --apply)
+expect "apply doesn't fetch" "change home/.sync-test-b" "$out"
+expect "apply lands on last fetched main" "$(git -C "$HOME/.dotfiles" rev-parse origin/main)" "$(head_)"
+check "apply didn't pick up the unfetched commit" test ! -e "$HOME/.dotfiles/home/.sync-test-c"
+expect "apply logs" "applied" "$(cat "$log")"
+expect "apply with nothing new" "nothing to apply" "$(sync --apply)"
+sync >/dev/null
+
+# Blocked cases
 printf 'local edit\n' > "$HOME/.dotfiles/home/.sync-test-a"
-out=$(sync)
-expect "skips with uncommitted edits" "uncommitted edits" "$out"
+before=$(head_)
+out=$(sync --apply); rc=$?
+expect "blocked by uncommitted edits" "uncommitted edits" "$out"
 expect "names the file that blocks it" "1 uncommitted: .sync-test-a" "$out"
+expect "blocked apply exits 1" 1 "$rc"
+expect "blocked apply doesn't move HEAD" "$before" "$(head_)"
+expect "blocked apply is logged" "apply blocked: uncommitted edits" "$(cat "$log")"
 expect "tmux shows dirty and behind" "●1 ↓1" "$(status --tmux)"
 git -C "$HOME/.dotfiles" checkout -q -- home/.sync-test-a
 
 printf 'junk\n' > "$HOME/.dotfiles/home/.untracked-junk"
-expect "untracked files don't block" "change home/.sync-test-a" "$(sync)"
+expect "untracked files don't block" "change home/.sync-test-c" "$(sync --apply)"
 rm "$HOME/.dotfiles/home/.untracked-junk"
 
-push_from_other home/.sync-test-b
+merge_on_github home/.sync-test-d
+sync --quiet
 git -C "$HOME/.dotfiles" checkout -q -b experiment
-expect "skips off main" "on experiment" "$(sync)"
+commit "$HOME/.dotfiles" home/.sync-test-branch
+expect "blocked off main" "on experiment" "$(sync --apply)"
+check "blocked apply doesn't link the branch's files" test ! -e "$HOME/.sync-test-branch"
 git -C "$HOME/.dotfiles" checkout -q main
+git -C "$HOME/.dotfiles" branch -q -D experiment
 
 commit "$HOME/.dotfiles" home/.sync-test-local
-expect "skips when main diverged" "local commits on main" "$(sync)"
+expect "blocked when main diverged" "local commits on main" "$(sync --apply)"
 expect "tmux shows both directions" "↓1 ↑1" "$(status --tmux)"
-git -C "$HOME/.dotfiles" reset -q --hard origin/main~1
+expect "rejects a commit not on main" "not on origin/main" "$(sync --apply HEAD)"
+check "diverged apply doesn't link local files" test ! -e "$HOME/.sync-test-local"
+git -C "$HOME/.dotfiles" reset -q --hard HEAD~1
+sync --apply >/dev/null
+printf 'dirty\n' > "$HOME/.dotfiles/home/.sync-test-a"
+rm "$HOME/.sync-test-a"
+expect "nothing new but dirty: still refuses" "uncommitted edits" "$(sync --apply)"
+check "and doesn't relink" test ! -e "$HOME/.sync-test-a"
+git -C "$HOME/.dotfiles" checkout -q -- home/.sync-test-a
+expect "nothing new, clean: relinks" "linked ~/.sync-test-a" "$(sync --apply)"
 
-expect "quiet prints nothing" "" "$(sync --quiet)"
-expect "quiet logs the update" "change home/.sync-test-b" "$(cat "$HOME/.local/state/dotfiles/sync.log")"
-before=$(wc -l < "$HOME/.local/state/dotfiles/sync.log")
-sync --quiet >/dev/null
-expect "quiet no-op logs nothing" "$before" "$(wc -l < "$HOME/.local/state/dotfiles/sync.log")"
+# A relink that fails exits nonzero, and the next run retries it
+mkdir "$HOME/.ro"
+chmod 555 "$HOME/.ro"
+merge_on_github home/.ro/file
+sync --quiet
+out=$(sync --apply); rc=$?
+expect "failed relink exits nonzero" 1 "$rc"
+expect "failed relink says so" "relinking failed" "$out"
+expect "failed relink is logged" "relink failed" "$(cat "$log")"
+expect "status flags the missing link" "not linked: ~/.ro/file" "$(status)"
+chmod 755 "$HOME/.ro"
+out=$(sync --apply); rc=$?
+expect "next apply retries the relink" "linked ~/.ro/file" "$out"
+expect "and exits 0" 0 "$rc"
+check "link is in place" test -L "$HOME/.ro/file"
+
+# Lock
+mkdir "$state/lock"
+echo $$ > "$state/lock/pid"
+out=$(sync); rc=$?
+expect "second run waits its turn" "another dotsync is running" "$out"
+expect "and exits 1" 1 "$rc"
+check "doesn't remove someone else's lock" test -d "$state/lock"
+expect "quiet run skips silently" "" "$(sync --quiet)"
+sleep 0 & wait $!
+echo $! > "$state/lock/pid"                # a process that's gone
+expect "takes over a stale lock" "up to date" "$(sync)"
+check "releases the lock" test ! -e "$state/lock"
+mkdir "$state/lock"                        # just made, pid not written yet
+expect "a lock with no pid yet is busy" "another dotsync is running" "$(sync)"
+touch -t 202001010000 "$state/lock"        # its maker died before writing one
+expect "an old lock with no pid is stale" "up to date" "$(sync)"
+mkdir "$state/lock" "$state/lock.reclaim"
+touch -t 202001010000 "$state/lock"
+expect "one reclaimer at a time" "another dotsync is running" "$(sync)"
+rmdir "$state/lock" "$state/lock.reclaim"
+
+# Fetch failures
+git -C "$HOME/.dotfiles" remote set-url origin "$tmp/missing.git"
+out=$(sync); rc=$?
+expect "fetch failure says so" "fetch failed" "$out"
+expect "fetch failure exits 1" 1 "$rc"
+expect "fetch failure is logged" "fetch failed" "$(cat "$log")"
+touch -t 202001010000 "$state/last-success"
+expect "status flags stale fetches" "no successful fetch since" "$(status)"
+expect "tmux flags stale fetches" "fetch?" "$(status --tmux)"
+touch -t 202001010000 "$state/last-attempt"
+expect "status flags an agent that stopped" "LaunchAgent isn't running" "$(status)"
 
 exit $fail

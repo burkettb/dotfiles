@@ -1,66 +1,203 @@
 #!/usr/bin/env bash
-# Brings ~/.dotfiles up to date with GitHub when that's safe, says why when it
-# isn't, then lists anything else that needs attention (dotfiles-status). Safe
-# means on main, no uncommitted edits to tracked files, and GitHub's main only
-# adds commits (a fast-forward). Fetches over HTTPS (the repo is public), so it
-# never asks the SSH agent for a key or Touch ID.
+# Fetches GitHub's main into ~/.dotfiles and says when it's behind. It never
+# changes your files on its own: you review what's new, then apply it by hand.
+# Fetches over HTTPS (the repo is public), so it never asks the SSH agent for a
+# key or Touch ID. A fetch only moves origin/main; HEAD, files and links stay.
 #
-#   dotsync          fetch, update, relink, and print what changed
-#   dotsync --quiet  same, but silent unless it changes something, which goes
-#                    to ~/.local/state/dotfiles/sync.log. Every shell prompt
-#                    runs this in the background at most every 15 minutes
-#                    (see ~/.zshrc).
+#   dotsync                  fetch, list what's waiting, print dotfiles-status
+#   dotsync --quiet          fetch silently (the LaunchAgent, every 15 minutes).
+#                            New commits and failures go to sync.log
+#   dotsync --apply [<rev>]  fast-forward to the last fetched origin/main, or to
+#                            <rev> on it, then fix links. Doesn't fetch, so it
+#                            applies exactly what you reviewed. Only on main
+#                            with no uncommitted edits
+#   dotsync --install-agent    write and load the LaunchAgent that runs --quiet
+#   dotsync --uninstall-agent  unload and delete it
+#
+# State lives in ~/.local/state/dotfiles: sync.log, last-attempt, last-success.
+# Must run on macOS's Bash 3.2.
 set -uo pipefail
 repo="$HOME/.dotfiles"
-[[ -x $repo/install.sh ]] || exit 0
-quiet=false
-[[ ${1:-} == --quiet ]] && quiet=true
 state="$HOME/.local/state/dotfiles"
+label=com.burkettb.dotsync
+plist="$HOME/Library/LaunchAgents/$label.plist"
+mode=${1:-}
+case $mode in
+    ''|--quiet|--apply|--install-agent|--uninstall-agent) ;;
+    *) printf 'usage: dotsync [--quiet | --apply [<rev>] | --install-agent | --uninstall-agent]\n' >&2; exit 2 ;;
+esac
+[[ -x $repo/install.sh ]] || exit 0
 mkdir -p "$state"
-touch "$state/last-sync"                # the shell's throttle, success or not
+quiet=false
+[[ $mode == --quiet ]] && quiet=true
 
 say() { $quiet || printf '%s\n' "$*"; }
-# Every exit ends with the status lines, unless running in the background
+log() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$state/sync.log"; }
+# Every exit except the LaunchAgent's ends with the status lines
 done_() {
     $quiet || "$(dirname "$0")/dotfiles-status"
     exit "${1:-0}"
 }
+
+install_agent() {
+    local bin="$HOME/.local/bin/dotsync" uid tries=0
+    [[ -x $bin ]] || { printf '%s is missing. Run ~/.dotfiles/install.sh first\n' "$bin" >&2; return 1; }
+    uid=$(id -u)
+    mkdir -p "$(dirname "$plist")"
+    # A real file, not a link into the repo: launchd may not load a symlinked plist
+    rm -f "$plist"
+    cat > "$plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Written by dotsync --install-agent. Rerun that instead of editing this. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$label</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$bin</string>
+        <string>--quiet</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>900</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>$state/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>$state/launchd.log</string>
+</dict>
+</plist>
+EOF
+    launchctl bootout "gui/$uid/$label" >/dev/null 2>&1 || true
+    # bootout can return before the job is gone, so give bootstrap a few tries
+    until launchctl bootstrap "gui/$uid" "$plist"; do
+        (( ++tries < 3 )) || { printf 'could not load %s\n' "$plist" >&2; return 1; }
+        sleep 1
+    done
+    printf 'loaded %s: dotsync --quiet runs now and every 15 minutes\n' "$plist"
+}
+
+uninstall_agent() {
+    launchctl bootout "gui/$(id -u)/$label" >/dev/null 2>&1 || true
+    rm -f "$plist"
+    printf 'removed %s\n' "$plist"
+}
+
+case $mode in
+    --install-agent) install_agent; exit ;;
+    --uninstall-agent) uninstall_agent; exit ;;
+esac
+
+# One run at a time, so the LaunchAgent can't fetch while you apply. mkdir is
+# atomic. A lock is stale when its process is gone (killed with -9), or when it
+# never got a pid and is over a minute old; only one run at a time may take
+# over a stale lock, so two can't each delete the other's.
+lock="$state/lock"
+busy() {
+    say "another dotsync is running, try again in a moment"
+    $quiet && exit 0
+    exit 1
+}
+stale() {
+    local pid
+    pid=$(cat "$lock/pid" 2>/dev/null)
+    if [[ -n $pid ]]; then
+        ! kill -0 "$pid" 2>/dev/null
+    else
+        [[ -n $(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null) ]]
+    fi
+}
+if ! mkdir "$lock" 2>/dev/null; then
+    stale && mkdir "$lock.reclaim" 2>/dev/null || busy
+    stale && rm -rf "$lock"
+    mkdir "$lock" 2>/dev/null
+    got=$?
+    rmdir "$lock.reclaim"
+    (( got == 0 )) || busy
+fi
+trap 'rm -rf "$lock"' EXIT
+trap 'exit 1' HUP INT TERM
+printf '%s\n' "$$" > "$lock/pid"
+
 export GIT_TERMINAL_PROMPT=0            # fail instead of waiting on a prompt
 
-url=$(git -C "$repo" remote get-url origin) || exit 1
+if [[ $mode == --apply ]]; then
+    target=${2:-origin/main}
+    rc=0
+    if ! new=$(git -C "$repo" rev-parse --verify --quiet "$target^{commit}"); then
+        say "$target is not a commit in ~/.dotfiles"
+        log "apply failed: $target is not a commit"
+        done_ 1
+    fi
+    if ! git -C "$repo" merge-base --is-ancestor "$new" origin/main; then
+        say "$target is not on origin/main"
+        log "apply failed: $target is not on origin/main"
+        done_ 1
+    fi
+    behind=$(git -C "$repo" rev-list --count "HEAD..$new")
+    branch=$(git -C "$repo" branch --show-current)
+    # Links follow whatever is checked out, so touch nothing unless that's main
+    # as GitHub has it
+    blocked=""
+    if [[ $branch != main ]]; then
+        blocked="~/.dotfiles is on ${branch:-a detached HEAD}"
+    elif [[ -n $(git -C "$repo" status --porcelain --untracked-files=no) ]]; then
+        blocked="uncommitted edits in ~/.dotfiles"
+    elif ! git -C "$repo" merge-base --is-ancestor HEAD origin/main; then
+        blocked="local commits on main. Run git -C ~/.dotfiles pull --rebase"
+    fi
+    if [[ -n $blocked ]]; then
+        say "$behind new on main, not applied: $blocked"
+        log "apply blocked: $blocked"
+        done_ 1
+    fi
+    if (( behind == 0 )); then
+        say "nothing to apply"
+    else
+        old=$(git -C "$repo" rev-parse HEAD)
+        git -C "$repo" merge --ff-only --quiet "$new" || { log "apply failed: merge"; done_ 1; }
+        say "applied:"
+        $quiet || git -C "$repo" log --oneline --no-decorate "$old..HEAD"
+        log "applied $(git -C "$repo" rev-parse --short "$old")..$(git -C "$repo" rev-parse --short HEAD)"
+    fi
+    # Reconcile links even when nothing is new, so a failed relink is retried
+    if ! "$repo/install.sh" --check >/dev/null 2>&1 && ! "$repo/install.sh"; then
+        say "relinking failed. Fix the error above, then run dotsync --apply again"
+        log "relink failed"
+        rc=1
+    fi
+    done_ "$rc"
+fi
+
+# Fetch. Default and --quiet never merge.
+date '+%F %T' > "$state/last-attempt"
+url=$(git -C "$repo" remote get-url origin) || { log "fetch failed: no origin remote"; exit 1; }
 [[ $url == git@github.com:* ]] && url="https://github.com/${url#git@github.com:}"
-if ! git -C "$repo" fetch --quiet "$url" '+refs/heads/main:refs/remotes/origin/main'; then
-    say "fetch failed (offline?)"
+before=$(git -C "$repo" rev-parse --verify --quiet origin/main)
+# Give up on a stalled connection instead of holding the lock indefinitely
+if ! err=$(git -C "$repo" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 \
+        fetch --quiet "$url" '+refs/heads/main:refs/remotes/origin/main' 2>&1); then
+    say "fetch failed (offline?): $err"
+    log "fetch failed: ${err//$'\n'/ }"
     done_ 1
 fi
-
-behind=$(git -C "$repo" rev-list --count HEAD..origin/main)
-if (( behind == 0 )); then
+date '+%F %T' > "$state/last-success"
+after=$(git -C "$repo" rev-parse origin/main)
+if [[ $after != "$before" ]]; then
+    log "origin/main moved to $(git -C "$repo" rev-parse --short "$after"):"
+    git -C "$repo" log --oneline --no-decorate "${before:+$before..}$after" | sed 's/^/    /' >> "$state/sync.log"
+fi
+if [[ -z $(git -C "$repo" rev-list -1 HEAD..origin/main) ]]; then
     say "up to date"
-    done_
+else
+    say "waiting on main, not applied:"
+    $quiet || git -C "$repo" log --oneline --no-decorate HEAD..origin/main
 fi
-branch=$(git -C "$repo" branch --show-current)
-if [[ $branch != main ]]; then
-    say "$behind new on main, not applied: ~/.dotfiles is on $branch"
-    done_
-fi
-if [[ -n $(git -C "$repo" status --porcelain --untracked-files=no) ]]; then
-    say "$behind new on main, not applied: uncommitted edits in ~/.dotfiles"
-    done_
-fi
-
-old=$(git -C "$repo" rev-parse HEAD)
-if ! git -C "$repo" merge --ff-only --quiet origin/main 2>/dev/null; then
-    say "$behind new on main, not applied: local commits on main. Run git -C ~/.dotfiles pull --rebase"
-    done_
-fi
-
-if $quiet; then
-    exec >>"$state/sync.log" 2>&1
-    printf '\n%s\n' "$(date '+%F %T')"
-fi
-printf 'updated ~/.dotfiles:\n'
-git -C "$repo" log --oneline --no-decorate "$old..HEAD"
-# New, renamed, or deleted files under home/ need their links redone
-"$repo/install.sh" --check >/dev/null 2>&1 || "$repo/install.sh"
 done_
