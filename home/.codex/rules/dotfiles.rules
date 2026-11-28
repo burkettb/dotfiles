@@ -1,0 +1,87 @@
+# Codex execpolicy rules, linked to ~/.codex/rules/dotfiles.rules. Codex loads
+# every *.rules file there, and appends its own "always allow" approvals to
+# default.rules, so this file keeps a different name to stay out of that path.
+# Rules match argv prefixes, so a flag only counts at the position shown; the
+# PreToolUse guard hook (hooks.json) reads the whole command. Check with:
+#   codex execpolicy check --pretty --rules home/.codex/rules/dotfiles.rules -- git push -f origin x
+
+FORCE = ["--force", "-f", "--force-with-lease", "--force-if-includes", "--mirror", "--delete", "-d"]
+MAIN = ["main", "master", "HEAD:main", "HEAD:master", "+main", "+master", "refs/heads/main", "refs/heads/master"]
+PUSH_WHY = "Force, delete and default-branch pushes need Brandon's explicit go-ahead."
+
+prefix_rule(
+    pattern = ["git", "push", FORCE],
+    decision = "prompt",
+    justification = PUSH_WHY,
+    match = ["git push --force origin fix/x", "git push -f"],
+    not_match = ["git push origin fix/x"],
+)
+
+prefix_rule(
+    pattern = ["git", "push", "origin", FORCE],
+    decision = "prompt",
+    justification = PUSH_WHY,
+    match = ["git push origin --force-with-lease fix/x"],
+)
+
+prefix_rule(
+    pattern = ["git", "push", "origin", MAIN],
+    decision = "prompt",
+    justification = PUSH_WHY,
+    match = ["git push origin main", "git push origin HEAD:master"],
+    not_match = ["git push origin feature/main-menu"],
+)
+
+prefix_rule(
+    pattern = ["git", "push", ["-u", "--set-upstream"], "origin", MAIN],
+    decision = "prompt",
+    justification = PUSH_WHY,
+    match = ["git push -u origin main"],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", ["merge", "close", "reopen"]],
+    decision = "prompt",
+    justification = "Merging or closing a PR is Brandon's call.",
+    match = ["gh pr merge 17 --squash", "gh pr close 17"],
+    not_match = ["gh pr view 17"],
+)
+
+# The guard hook's other local "ask" cases, so Codex prompts instead of denying
+prefix_rule(
+    pattern = ["git", ["reset", "branch", "stash", "rebase"], ["--hard", "-D", "drop", "--root"]],
+    decision = "prompt",
+    justification = "Destructive git operation.",
+    match = ["git reset --hard HEAD~1", "git branch -D old", "git stash drop", "git rebase --root"],
+    not_match = ["git reset HEAD file", "git branch -d merged"],
+)
+
+prefix_rule(
+    pattern = ["git", ["filter-repo", "filter-branch"]],
+    decision = "prompt",
+    justification = "Rewrites history.",
+)
+
+prefix_rule(
+    pattern = [["terraform", "tofu"], ["apply", "destroy", "import"]],
+    decision = "prompt",
+    justification = "Changes real infrastructure.",
+    match = ["tofu apply", "terraform destroy -target x"],
+    not_match = ["tofu plan"],
+)
+
+prefix_rule(
+    pattern = ["gh", "api", ["-X", "--method", "--method=POST", "--method=PUT", "--method=PATCH", "--method=DELETE"]],
+    decision = "prompt",
+    justification = "gh api with an explicit method can write to GitHub.",
+    match = ["gh api -X PATCH repos/o/r", "gh api --method DELETE repos/o/r"],
+    not_match = ["gh api repos/o/r/pulls"],
+)
+
+prefix_rule(
+    pattern = ["gh", "auth", "token"],
+    decision = "forbidden",
+    justification = "Prints the GitHub token. Use gh commands directly; they authenticate on their own.",
+    match = ["gh auth token"],
+    not_match = ["gh auth status"],
+)
