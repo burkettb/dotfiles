@@ -56,7 +56,11 @@
       "Read(~/.kube/**)",
       "Read(~/.config/gcloud/**)",
       "Read(~/.docker/config.json)",
-      "Read(~/Library/Keychains/**)"
+      "Read(~/Library/Keychains/**)",
+      "Read(~/.codex/auth.json)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.t3/userdata/secrets/**)",
+      "Read(~/.local/share/atuin/**)"
     ],
     "additionalDirectories": [
       "~/dev"
@@ -80,14 +84,16 @@
       "glab *",
       "devcenter *",
       "docker *",
-      "codex *",
       "git cherry-pick *",
-      "git rebase *",
-      "aws *"
+      "git rebase *"
     ],
     "filesystem": {
       "denyRead": [
-        "~/.ssh"
+        "~/.ssh",
+        "~/.codex/auth.json",
+        "~/.config/gh/hosts.yml",
+        "~/.t3/userdata/secrets",
+        "~/.local/share/atuin"
       ],
       "allowRead": [
         "~/.ssh/config",
@@ -240,6 +246,7 @@
             "type": "command",
             "command": "~/.claude/hooks/guard-bash.sh",
             "timeout": 5,
+            "onFailure": "block",
             "statusMessage": "Bash guard"
           }
         ]
