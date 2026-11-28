@@ -113,12 +113,13 @@ From iris, on the LAN:
 
 ```bash
 ssh -o PubkeyAuthentication=no argo   # argo's login password; the disk is locked, so no key works yet
-# the connection drops once the disk unlocks; give it a minute to finish booting
+# no shell: macOS drops the connection while it mounts the disk and starts services
 ssh argo .local/bin/argo-health
 ```
 
-If the SSH unlock fails, or argo-health says no one is logged in to the GUI,
-screen share in from iris (`open vnc://argo`), log in, and rerun argo-health.
+If argo-health says no one is logged in to the GUI, screen share in from iris
+(`open vnc://argo`), log in, and rerun it. Screen Sharing only starts once the
+disk is unlocked, so if the SSH unlock itself fails, someone has to be at argo.
 
 **Planned reboot**: `sudo fdesetup authrestart` on argo, never a plain `reboot`.
 It unlocks FileVault once for the next boot. Confirm with argo-health after.
@@ -141,7 +142,11 @@ argo-setup --apply    # asks for the sudo password
 # 4. Screen share in: create the Secretive key (GitHub auth + signing key,
 #    allowed_signers, ~/.gitconfig.local), then switch the remote to SSH
 git -C ~/.dotfiles remote set-url origin git@github.com:burkettb/dotfiles.git
-# 5. Sign in to T3, then rerun argo-setup until every line is ok
+# 5. Sign in to T3, then the agent plugins and the agent-box permissions
+#    (the Agent box row in Machine differences)
+agent-bootstrap
+# 6. Rerun until every line is ok
+argo-setup
 ```
 
 ## What's here
