@@ -90,10 +90,8 @@
       "glab *",
       "devcenter *",
       "docker *",
-      "codex *",
       "git cherry-pick *",
-      "git rebase *",
-      "aws *"
+      "git rebase *"
     ],
     "filesystem": {
       "denyRead": [

@@ -133,7 +133,7 @@ fi
 #    only a leading "cd <dir> &&" or a "git -C <dir>" is tolerated: the harness
 #    resets cwd after every call, so cross-repo work has no other way to target
 #    the repo, and nothing else rides along under the flag.
-excl='(^|[;&|(]|\$\() *(ssh|scp|rsync|gh|glab|devcenter|docker|codex|aws)\b|\bgit +(commit|tag|fetch|pull|push|cherry-pick|rebase)\b'
+excl='(^|[;&|(]|\$\() *(ssh|scp|rsync|gh|glab|devcenter|docker)\b|\bgit +(commit|tag|fetch|pull|push|cherry-pick|rebase)\b'
 compound='&&|\|\||;|\||\$\(|`'
 rest=$(printf '%s' "$cmd" | sed -E 's/^[[:space:]]*cd[[:space:]]+[^;&|]+&&[[:space:]]*//')
 if [ "$off" = "true" ] && printf '%s' "$rest" | grep -Eq "$excl" && printf '%s' "$rest" | grep -Eq "$compound"; then
