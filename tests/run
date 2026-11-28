@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Runs every tests/*.test.sh and stops at the first suite that fails.
+#   tests/run
+set -u
+dir="$(cd "$(dirname "$0")" && pwd)"
+for t in "$dir"/*.test.sh; do
+    [[ -e $t ]] || continue
+    name=$(basename "$t")
+    echo "== $name"
+    if ! bash "$t"; then
+        echo "FAILED: $name"
+        exit 1
+    fi
+done
+echo "all suites passed"

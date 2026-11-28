@@ -1,0 +1,12 @@
+# Copy to ~/.shell_local, which ~/.shell_common sources last. Untracked: it
+# holds this Mac's secrets and work-only setup. Values stay out of the repo;
+# fill them in on the machine (or read them from Keychain here).
+
+# Codex's context7 MCP server sends this as its API key header
+export CONTEXT7_API_KEY=
+
+# Only if the github MCP server is enabled in ~/.codex/config.toml
+# export GITHUB_TOKEN=
+
+# tmux-sessionizer search roots, when the defaults don't fit this Mac
+# export TMUX_SESSIONIZER_ROOTS="$HOME/dev:$HOME/dev-icfcorp"

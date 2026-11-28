@@ -1,0 +1,210 @@
+#!/bin/bash
+# Checks, and with --apply fixes, the settings argo needs to stay reachable:
+# never sleep, restart after a power loss, SSH on (FileVault unlocks over SSH),
+# no unattended macOS installs that would strand it at the unlock screen, and
+# T3 plus the dotfiles agent running. Safe to run any number of times.
+#
+#   argo-setup            same as --check
+#   argo-setup --check    one line per item (ok / change / manual), changes nothing
+#   argo-setup --apply    fix what it can. Prints each command first, and uses sudo
+#                         only for the system settings that need it
+#
+# Exit 0 when every item is ok. Run it outside the agent sandbox: in there
+# launchctl and fdesetup can't see the system and report everything wrong.
+# Bash 3.2 (/bin/bash) on purpose, so it runs on a fresh Mac before Homebrew.
+set -u
+
+mode=check
+case ${1:-} in
+    ''|--check) ;;
+    --apply) mode=apply ;;
+    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) printf 'usage: argo-setup [--check | --apply]\n' >&2; exit 2 ;;
+esac
+# A non-interactive `ssh argo ...` starts with a bare PATH. Appended, so
+# anything earlier on PATH (tests put stubs there) wins.
+PATH="$PATH:$HOME/.local/bin:/opt/homebrew/bin"
+[[ ${SANDBOX_RUNTIME:-} != 1 ]] ||
+    printf 'note: inside an agent sandbox, launchctl and fdesetup answers are wrong. Run this outside it.\n' >&2
+
+host_file="$HOME/.config/dotfiles/host"
+repo="$HOME/.dotfiles"
+uid=$(id -u)
+t3_label=com.t3tools.t3code.service
+dotsync_label=com.burkettb.dotsync
+su_plist=/Library/Preferences/com.apple.SoftwareUpdate
+pm_settings="sleep=0 disksleep=0 autorestart=1 womp=1 ttyskeepawake=1"
+bad=0
+quiet=false                             # the --apply pass prints only what it runs
+
+say() { $quiet || printf '%s\n' "$*"; }
+ok() { say "ok      $1"; }
+change() { say "change  $1"; bad=$((bad + 1)); }
+manual() { say "manual  $1"; bad=$((bad + 1)); }
+# Failures are reported here and caught again by the check pass after --apply
+run() { printf '+ %s\n' "$*"; "$@" || { printf '  failed (exit %s)\n' "$?"; return 1; }; }
+run_sudo() { run sudo "$@"; }
+
+# pm_value <key>: the AC Power value pmset is set to (not the in-use value,
+# which caffeinate and friends can override)
+pm_value() {
+    pmset -g custom 2>/dev/null | awk -v k="$1" '
+        /^[^ ].*:$/ { ac = ($0 ~ /^AC Power/) ; seen = seen || ac; next }
+        $1 == k && (ac || !seen) { print $2; exit }'
+}
+
+# The host file alone isn't enough: install.sh saves it before linking, so a
+# run that stopped halfway leaves it set with links missing
+check_host() {
+    local h="" first
+    [[ -f $host_file ]] && IFS= read -r h < "$host_file"
+    h=${h//[[:space:]]/}
+    if [[ ! -x $repo/install.sh ]]; then
+        manual "no ~/.dotfiles/install.sh: clone the dotfiles to ~/.dotfiles first"
+    elif [[ $h != argo ]]; then
+        if [[ $mode == apply ]]; then
+            run "$repo/install.sh" --host argo
+        else
+            change "host file says '${h:-nothing}': ~/.dotfiles/install.sh --host argo"
+        fi
+    elif first=$("$repo/install.sh" --check 2>&1); then
+        ok "host file says argo, every dotfile linked"
+    elif [[ $mode == apply ]]; then
+        run "$repo/install.sh"
+    else
+        change "host file says argo, but $(printf '%s\n' "$first" | head -1): ~/.dotfiles/install.sh"
+    fi
+}
+
+check_pmset() {
+    local kv k want got fix=()
+    for kv in $pm_settings; do
+        k=${kv%=*} want=${kv#*=}
+        got=$(pm_value "$k")
+        if [[ $got == "$want" ]]; then
+            ok "pmset $k $want"
+        elif [[ $mode == apply ]]; then
+            fix+=("$k" "$want")
+        else
+            change "pmset $k is ${got:-unset}, want $want"
+        fi
+    done
+    [[ ${#fix[@]} -eq 0 ]] || run_sudo pmset -c "${fix[@]}"
+}
+
+# Remote Login is the launchd job com.openssh.sshd. Reading it needs no sudo,
+# unlike `systemsetup -getremotelogin`. Newer macOS prints enabled/disabled,
+# older prints the disabled flag as true/false.
+remote_login_on() {
+    launchctl print-disabled system 2>/dev/null |
+        grep -E '"com\.openssh\.sshd" => (enabled|false)' >/dev/null
+}
+check_ssh() {
+    if remote_login_on; then
+        ok "Remote Login on"
+    elif [[ $mode == apply ]]; then
+        # Needs Full Disk Access for the terminal running it; without that,
+        # System Settings > General > Sharing > Remote Login does the same
+        run_sudo systemsetup -setremotelogin on ||
+            printf '  turn on System Settings > General > Sharing > Remote Login instead\n'
+    else
+        change "Remote Login off: FileVault can't be unlocked over SSH after a power loss"
+    fi
+}
+
+# System Settings > General > Software Update > Automatic Updates >
+# "Install macOS updates" is this key. Downloading stays on; only the
+# unattended install (and its restart into the FileVault unlock screen) goes.
+check_updates() {
+    local v
+    v=$(defaults read "$su_plist" AutomaticallyInstallMacOSUpdates 2>/dev/null)
+    if [[ $v == 0 ]]; then
+        ok "automatic macOS update installs off"
+    elif [[ $mode == apply ]]; then
+        run_sudo defaults write "$su_plist" AutomaticallyInstallMacOSUpdates -bool false
+    else
+        [[ -n $v ]] || v="not set, which macOS treats as on"
+        change "automatic macOS update installs on ($v)"
+    fi
+}
+
+# Turning FileVault on or off is Brandon's call and needs the GUI, so this only reports
+check_filevault() {
+    if fdesetup status 2>/dev/null | grep -q 'FileVault is On'; then
+        ok "FileVault on"
+    else
+        manual "FileVault is not on: turn it on in System Settings > Privacy & Security"
+    fi
+    if [[ $(fdesetup supportsauthrestart 2>/dev/null) == true ]]; then
+        ok "fdesetup supports authrestart"
+    else
+        manual "fdesetup authrestart not supported: planned reboots will stop at the unlock screen"
+    fi
+}
+
+t3_running() {
+    launchctl print "gui/$uid/$t3_label" 2>/dev/null | grep -q 'state = running'
+}
+check_t3() {
+    local status
+    if ! command -v t3 >/dev/null 2>&1; then
+        manual "t3 not installed: install T3 Code, sign in, then rerun"
+        return
+    fi
+    status=$(t3 service status 2>/dev/null | sed -n 's/^ *Status: //p' | head -1)
+    if [[ $status == installed* ]] && t3_running; then
+        ok "T3 service installed and running"
+    elif [[ $mode == apply ]]; then
+        run t3 service install          # also what T3 says to run to repair it
+    else
+        change "T3 service ${status:-not installed}, not running: t3 service install"
+    fi
+}
+
+# Only once dotsync has the LaunchAgent (PR #24); until then this item is skipped
+check_dotsync() {
+    local d
+    d=$(command -v dotsync 2>/dev/null) || { ok "dotsync not installed, skipped"; return; }
+    if ! grep -q -- '--install-agent' "$d" 2>/dev/null; then
+        ok "dotsync has no --install-agent yet, skipped"
+    elif [[ -f $HOME/Library/LaunchAgents/$dotsync_label.plist ]] &&
+         launchctl print "gui/$uid/$dotsync_label" >/dev/null 2>&1; then
+        ok "dotsync agent installed and loaded"
+    elif [[ $mode == apply ]]; then
+        run dotsync --install-agent
+    else
+        change "dotsync agent not installed or not loaded: dotsync --install-agent"
+    fi
+}
+
+check_doctor() {
+    local out
+    if ! command -v agent-doctor >/dev/null 2>&1; then
+        manual "agent-doctor not found: run ~/.dotfiles/install.sh --host argo"
+    elif out=$(agent-doctor --profile agent-box 2>&1); then
+        ok "agent-doctor --profile agent-box passes"
+    else
+        manual "agent-doctor --profile agent-box fails:"
+        $quiet || printf '%s\n' "$out" | grep '^FAIL' | sed 's/^/        /'
+    fi
+}
+
+items() {
+    check_host
+    check_pmset
+    check_ssh
+    check_updates
+    check_filevault
+    check_t3
+    check_dotsync
+    check_doctor
+}
+
+if [[ $mode == apply ]]; then
+    quiet=true
+    items
+    quiet=false bad=0 mode=check
+    printf 'after --apply:\n'
+fi
+items
+exit $((bad > 0 ? 1 : 0))

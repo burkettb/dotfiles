@@ -13,14 +13,8 @@
       "Bash(kubectl wait *)",
       "Bash(kubectl rollout status *)",
       "Bash(kubectl top *)",
-      "Bash(npm run build)",
       "Bash(npm run typecheck)",
-      "Bash(npm test)",
-      "Bash(npx tsc --noEmit *)",
-      "Bash(curl -s http://localhost:*)",
-      "mcp__Claude_Preview__preview_screenshot",
-      "mcp__Claude_Preview__preview_console_logs",
-      "Edit(//Users/brandon/dev/devcenter-personal/**)"
+      "Bash(npx tsc --noEmit *)"
     ],
     "ask": [
       "Bash(gh pr merge *)",
@@ -28,8 +22,8 @@
       "Bash(git clean -f *)",
       "Bash(rm -rf *)",
       "Bash(sudo *)",
-      "Bash(terraform apply *)",
-      "Bash(terraform destroy *)",
+      "Bash(tofu apply *)",
+      "Bash(tofu destroy *)",
       "Bash(kubectl apply *)",
       "Bash(kubectl delete *)",
       "Bash(kubectl patch *)",
@@ -62,7 +56,11 @@
       "Read(~/.kube/**)",
       "Read(~/.config/gcloud/**)",
       "Read(~/.docker/config.json)",
-      "Read(~/Library/Keychains/**)"
+      "Read(~/Library/Keychains/**)",
+      "Read(~/.codex/auth.json)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.t3/userdata/secrets/**)",
+      "Read(~/.local/share/atuin/**)"
     ],
     "additionalDirectories": [
       "~/dev"
@@ -86,14 +84,16 @@
       "glab *",
       "devcenter *",
       "docker *",
-      "codex *",
       "git cherry-pick *",
-      "git rebase *",
-      "aws *"
+      "git rebase *"
     ],
     "filesystem": {
       "denyRead": [
-        "~/.ssh"
+        "~/.ssh",
+        "~/.codex/auth.json",
+        "~/.config/gh/hosts.yml",
+        "~/.t3/userdata/secrets",
+        "~/.local/share/atuin"
       ],
       "allowRead": [
         "~/.ssh/config",
@@ -232,7 +232,7 @@
           },
           {
             "type": "command",
-            "command": "cat ~/.config/agent/machine.md 2>/dev/null || true",
+            "command": "cat ~/.config/agent/machine.md ~/.config/agent/machine.local.md 2>/dev/null || true",
             "timeout": 5
           },
           {
@@ -251,6 +251,7 @@
             "type": "command",
             "command": "~/.claude/hooks/guard-bash.sh",
             "timeout": 5,
+            "onFailure": "block",
             "statusMessage": "Bash guard"
           }
         ]
@@ -259,8 +260,7 @@
   },
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
-    "codex@openai-codex": true,
-    "thread-card@dotfiles": true
+    "codex@openai-codex": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -274,16 +274,10 @@
         "source": "git",
         "url": "https://github.com/openai/codex-plugin-cc.git"
       }
-    },
-    "dotfiles": {
-      "source": {
-        "source": "directory",
-        "path": "~/.dotfiles/claude-plugins"
-      }
     }
   },
   "skipWorkflowUsageWarning": true,
-  "agentPushNotifEnabled": true,
+  "agentPushNotifEnabled": false,
   "env": {
     "UV_CACHE_DIR": "/tmp/claude/uv-cache"
   }

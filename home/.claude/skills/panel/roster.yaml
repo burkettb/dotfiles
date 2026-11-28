@@ -1,0 +1,16 @@
+# Default reviewers for /panel. Edit this when models change; override per run
+# with --with. Ids must match orchestrator_capabilities (provider, model, and
+# the option id that sets effort, which differs by provider).
+reviewers:
+  - name: opus
+    provider: claudeAgent
+    model: claude-opus-5-5
+    options: { effort: high }
+  - name: sol
+    provider: codex
+    model: gpt-6.2-sol
+    options: { reasoningEffort: high }
+  - name: fable
+    provider: claudeAgent
+    model: claude-fable-5-2
+    options: { effort: high }

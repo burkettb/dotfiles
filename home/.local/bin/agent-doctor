@@ -2,6 +2,31 @@
 
 set -u
 
+# agent-doctor [--profile workspace|agent-box]
+# Without the flag the profile comes from ~/.config/agent/profile (linked from
+# hosts/<name>/ on a machine that has one), else workspace.
+usage() { printf 'usage: agent-doctor [--profile workspace|agent-box]\n'; }
+profile_file="$HOME/.config/agent/profile"
+profile=""
+while (( $# )); do
+  case $1 in
+    --profile) (( $# >= 2 )) || { usage >&2; exit 2; }; profile=$2; shift ;;
+    --profile=*) profile=${1#--profile=} ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+  esac
+  shift
+done
+if [[ -z "$profile" && -f "$profile_file" ]]; then
+  profile=$(head -1 "$profile_file" | tr -d '[:space:]')
+fi
+profile=${profile:-workspace}
+case $profile in
+  workspace|agent-box) ;;
+  *) printf 'unknown profile: %s\n' "$profile" >&2; usage >&2; exit 2 ;;
+esac
+printf 'profile: %s\n' "$profile"
+
 failures=0
 warnings=0
 
@@ -43,7 +68,7 @@ else
 fi
 
 claude_plugin_json=$(claude plugin list --json 2>/dev/null) || claude_plugin_json='[]'
-for plugin in 'typescript-lsp@claude-plugins-official' 'codex@openai-codex' 'thread-card@dotfiles'; do
+for plugin in 'typescript-lsp@claude-plugins-official' 'codex@openai-codex'; do
   if jq -e --arg p "$plugin" 'map(select(.id == $p and .enabled == true)) | length == 1' <<<"$claude_plugin_json" >/dev/null; then
     pass "Claude plugin enabled: $plugin"
   else
@@ -68,11 +93,35 @@ for required_file in \
   fi
 done
 
-if rg -q 'default_permissions = "safe-workspace"' "$HOME/.codex/config.toml" && \
-   rg -q '"disableBypassPermissionsMode": "disable"' "$HOME/.claude/settings.json"; then
-  pass 'permission hardening is present'
+if rg -q '"disableBypassPermissionsMode": "disable"' "$HOME/.claude/settings.json"; then
+  pass 'Claude bypass-permissions mode is disabled'
 else
-  fail 'permission hardening is missing'
+  fail 'Claude bypass-permissions mode is not disabled'
+fi
+
+# What Codex is allowed depends on the profile: workspace keeps the sandbox,
+# agent-box (a machine where agents run with full access on purpose) drops it.
+# Only top-level keys count (a [profiles.x] table can set its own), comments dropped.
+codex_mode=$(awk '/^[[:space:]]*\[/ { exit }
+  { sub(/[[:space:]]*#.*/, ""); sub(/[[:space:]]*=[[:space:]]*/, " = "); gsub(/^[[:space:]]+|[[:space:]]+$/, "") }
+  /^(default_permissions|sandbox_mode) ?=/ { print }' "$HOME/.codex/config.toml" 2>/dev/null)
+case $profile in
+  workspace) want='default_permissions = "safe-workspace"' ;;
+  agent-box) want='sandbox_mode = "danger-full-access"|default_permissions = ":danger-full-access"' ;;
+esac
+if [[ -n "$codex_mode" ]] && printf '%s\n' "$codex_mode" | rg -qx "$want"; then
+  pass "Codex permissions match the $profile profile: ${codex_mode//$'\n'/, }"
+else
+  fail "Codex permissions don't match the $profile profile: ${${codex_mode//$'\n'/, }:-none set}"
+fi
+
+# The guard hook has to deny credential reads, not just exist
+guard="$HOME/.claude/hooks/guard-bash.sh"
+guard_out=$(printf '%s' '{"tool_input":{"command":"cat ~/.aws/credentials"}}' | "$guard" 2>/dev/null)
+if [[ "$(jq -r '.hookSpecificOutput.permissionDecision // empty' <<<"$guard_out" 2>/dev/null)" == deny ]]; then
+  pass 'guard hook denies a credential read'
+else
+  fail "guard hook did not deny a credential read ($guard)"
 fi
 
 if rg -q 'github_pat_|ghp_[A-Za-z0-9]|ctx7sk-|BEGIN .*PRIVATE KEY' \

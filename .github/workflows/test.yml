@@ -1,0 +1,56 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install tools
+        run: |
+          missing=()
+          command -v shellcheck >/dev/null || missing+=(shellcheck)
+          command -v jq >/dev/null || missing+=(jq)
+          command -v rg >/dev/null || missing+=(ripgrep)
+          if [ ${#missing[@]} -gt 0 ]; then brew install "${missing[@]}"; fi
+          shellcheck --version | sed -n 2p
+          jq --version
+          rg --version | head -1
+          /bin/bash --version | head -1
+
+      - name: Shellcheck
+        run: |
+          files=(install.sh home/.claude/hooks/*.sh tests/*.sh tests/run)
+          for f in home/.local/bin/*; do
+            case $(head -n 1 "$f") in
+              *zsh*) ;;
+              '#!'*bash*|'#!'*/sh|'#!'*' sh') files+=("$f") ;;
+            esac
+          done
+          printf '%s\n' "${files[@]}"
+          shellcheck --severity=error "${files[@]}"
+
+      - name: Validate JSON
+        run: git ls-files -z '*.json' | xargs -0 -n 1 jq empty
+
+      - name: Tests
+        run: tests/run

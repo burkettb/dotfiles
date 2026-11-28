@@ -1,0 +1,9 @@
+# Copy to ~/.gitconfig.local, which ~/.gitconfig includes. Untracked: it holds
+# this Mac's own settings, starting with its signing key (a public key file;
+# Secretive keeps the private half in the Secure Enclave).
+[user]
+	signingkey = ~/.ssh/<key>.pub
+
+# No Secretive key on this Mac yet: turn signing off instead of the line above
+# [commit]
+# 	gpgsign = false

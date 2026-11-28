@@ -1,0 +1,31 @@
+# Catalog of apps to pick from per machine; nothing here installs on its own.
+# brew bundle --file ~/.dotfiles/Brewfile.optional installs all of it, or copy
+# the lines you want into a scratch Brewfile and run brew bundle --file on that.
+
+# Desktop apps
+cask "iterm2"               # Terminal
+cask "visual-studio-code"   # Editor
+cask "claude"               # Claude desktop app
+cask "chatgpt"              # ChatGPT desktop app
+cask "firefox"              # Browser
+cask "google-chrome"        # Browser
+cask "linearmouse"          # Mouse settings (~/.config/linearmouse)
+cask "bitwarden"            # Password manager
+cask "font-meslo-lg-nerd-font"   # iTerm's font
+
+# Personal
+brew "ollama"               # Local LLMs (~/dev/localai)
+cask "anki"                 # Flashcards
+cask "discord"              # Chat
+cask "dropbox"              # File sync
+cask "figma"                # Design
+cask "mactex-no-gui"        # LaTeX for ~/dev/resumes; 9.7 GB, try tectonic first on a new Mac
+cask "notion"               # Notes
+cask "obs"                  # Screen recording and streaming
+cask "spotify"              # Music
+cask "veracrypt-fuse-t"     # Encrypted volumes
+cask "zoom"                 # Video calls
+
+# Mac App Store (needs mas from ~/.Brewfile and a signed-in App Store)
+mas "WireGuard", id: 1451685025   # VPN client
+mas "Xcode", id: 497799835        # Apple dev tools

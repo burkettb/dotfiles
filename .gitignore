@@ -18,10 +18,8 @@ id_ed25519*
 
 nvim.log
 
-# This repo's own Claude Code session data. home/.claude is the real ~/.claude
-# config and must stay tracked, including against ~/.gitignore_global's .claude rule.
+# This repo's own Claude Code session data (home/.claude is the real ~/.claude).
 /.claude/
-!/home/.claude/
 
 # DevCenter's .git/info/exclude hides CLAUDE.md and AGENTS.md anywhere (for its
 # links at the repo root); the real agent files under home/ must stay tracked.
