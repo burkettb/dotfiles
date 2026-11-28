@@ -99,7 +99,6 @@ files or skip themselves when a folder doesn't exist:
 | `home/.Brewfile` | `~/.Brewfile` | `brew bundle --global` |
 | `Brewfile.personal` | not linked | personal-only apps |
 | `seeds/codex-config.toml` | copied once | see Agent configuration |
-| `claude-plugins/` | read in place | Claude folder marketplace |
 
 Folders the repo owns completely (nvim, mise, atuin, linearmouse, each skill) are
 linked as whole folders, so new files inside need no `install.sh` run and apps
