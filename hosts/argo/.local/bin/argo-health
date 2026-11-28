@@ -1,0 +1,81 @@
+#!/bin/bash
+# Is argo okay? One line per item, exit 1 if anything is wrong. Read-only, no sudo.
+#
+#   ssh argo .local/bin/argo-health     from iris (a bare ssh command has no ~/.local/bin on PATH)
+#   argo-health                         on argo
+#
+# Agents: run it outside the sandbox. In there launchctl and sysctl are
+# blocked, so T3 and the boot time look broken when they aren't.
+set -u
+PATH="$PATH:$HOME/.local/bin:/opt/homebrew/bin"
+[[ ${SANDBOX_RUNTIME:-} != 1 ]] ||
+    printf 'note: inside an agent sandbox, launchctl answers are wrong. Run this outside it.\n' >&2
+
+min_free_gb=20
+bad=0
+ok() { printf 'ok    %s\n' "$1"; }
+fail() { printf 'FAIL  %s\n' "$1"; bad=$((bad + 1)); }
+info() { printf 'info  %s\n' "$1"; }
+
+# Uptime and last boot
+boot=$(sysctl -n kern.boottime 2>/dev/null | sed -n 's/^{ sec = \([0-9][0-9]*\),.*/\1/p')
+if [[ -n $boot ]]; then
+    up=$(( $(date +%s) - boot ))
+    ok "up $((up / 86400))d $((up % 86400 / 3600))h, booted $(date -r "$boot" '+%Y-%m-%d %H:%M')"
+else
+    fail "boot time unreadable (sysctl kern.boottime)"
+fi
+
+# T3 is a LaunchAgent, so it only runs while someone is logged in to the GUI.
+# At the login window the console belongs to root.
+console=$(stat -f %Su /dev/console 2>/dev/null)
+if [[ -n $console && $console != root ]]; then
+    ok "GUI session: $console logged in"
+else
+    fail "no one logged in to the GUI (console: ${console:-unknown}); T3 can't run. Screen share in and log in"
+fi
+
+if launchctl print "gui/$(id -u)/com.t3tools.t3code.service" 2>/dev/null | grep -q 'state = running'; then
+    v=$(t3 --version 2>/dev/null | head -1)
+    ok "T3 service running${v:+ ($v)}"
+else
+    fail "T3 service not running: t3 service status, then t3 service install"
+fi
+
+# Prints nothing when the live checkout is clean and current with the last fetch
+if command -v dotfiles-status >/dev/null 2>&1; then
+    s=$(dotfiles-status 2>&1 | head -3 | paste -sd ';' - | sed 's/;/; /g')
+    if [[ -z $s ]]; then
+        ok "dotfiles clean and up to date with the last fetch"
+    else
+        info "dotfiles: $s"
+    fi
+else
+    info "dotfiles-status not found"
+fi
+
+# The Data volume holds everything writable; / is the sealed system volume
+vol=/System/Volumes/Data
+[[ -d $vol ]] || vol=/
+free_kb=$(df -k "$vol" 2>/dev/null | awk 'NR == 2 { print $4 }')
+if [[ -z $free_kb ]]; then
+    fail "disk free unreadable (df $vol)"
+elif (( free_kb / 1048576 < min_free_gb )); then
+    fail "disk: $((free_kb / 1048576)) GB free, under $min_free_gb GB"
+else
+    ok "disk: $((free_kb / 1048576)) GB free"
+fi
+
+pm() {
+    pmset -g custom 2>/dev/null | awk -v k="$1" '
+        /^[^ ].*:$/ { ac = ($0 ~ /^AC Power/); seen = seen || ac; next }
+        $1 == k && (ac || !seen) { print $2; exit }'
+}
+sleep_v=$(pm sleep) restart_v=$(pm autorestart)
+if [[ $sleep_v == 0 && $restart_v == 1 ]]; then
+    ok "pmset sleep 0, autorestart 1"
+else
+    fail "pmset sleep ${sleep_v:-?} (want 0), autorestart ${restart_v:-?} (want 1): argo-setup --apply"
+fi
+
+exit $((bad > 0 ? 1 : 0))
