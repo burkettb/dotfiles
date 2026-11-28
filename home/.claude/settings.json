@@ -254,8 +254,7 @@
   },
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
-    "codex@openai-codex": true,
-    "thread-card@dotfiles": true
+    "codex@openai-codex": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -268,12 +267,6 @@
       "source": {
         "source": "git",
         "url": "https://github.com/openai/codex-plugin-cc.git"
-      }
-    },
-    "dotfiles": {
-      "source": {
-        "source": "directory",
-        "path": "~/.dotfiles/claude-plugins"
       }
     }
   },
