@@ -61,6 +61,9 @@ glob_scan_max_depth = 20
 "__HOME__/.config/gcloud" = "deny"
 "__HOME__/.docker/config.json" = "deny"
 "__HOME__/Library/Keychains" = "deny"
+"__HOME__/.npmrc" = "deny"
+"__HOME__/.netrc" = "deny"
+"__HOME__/.config/gh/hosts.yml" = "deny"
 
 [permissions.safe-workspace.filesystem.":workspace_roots"]
 "**/.env" = "deny"

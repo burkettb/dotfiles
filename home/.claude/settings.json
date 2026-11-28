@@ -62,7 +62,11 @@
       "Read(~/.kube/**)",
       "Read(~/.config/gcloud/**)",
       "Read(~/.docker/config.json)",
-      "Read(~/Library/Keychains/**)"
+      "Read(~/Library/Keychains/**)",
+      "Read(~/.codex/auth.json)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.t3/userdata/secrets/**)",
+      "Read(~/.local/share/atuin/**)"
     ],
     "additionalDirectories": [
       "~/dev"
@@ -93,7 +97,11 @@
     ],
     "filesystem": {
       "denyRead": [
-        "~/.ssh"
+        "~/.ssh",
+        "~/.codex/auth.json",
+        "~/.config/gh/hosts.yml",
+        "~/.t3/userdata/secrets",
+        "~/.local/share/atuin"
       ],
       "allowRead": [
         "~/.ssh/config",
