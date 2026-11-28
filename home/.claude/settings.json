@@ -246,6 +246,7 @@
             "type": "command",
             "command": "~/.claude/hooks/guard-bash.sh",
             "timeout": 5,
+            "onFailure": "block",
             "statusMessage": "Bash guard"
           }
         ]
