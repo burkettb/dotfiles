@@ -36,6 +36,8 @@ brew "uv"                   # Python packages, venvs, CLI apps (uv tool install)
 
 # CLIs
 brew "gh"
+brew "lazygit"              # Git TUI (nvim maps it)
+brew "shellcheck"           # Shell script linter (CI runs it too)
 brew "jq"                   # Required by agent-doctor, agent-bootstrap, guard-bash.sh
 brew "awscli"
 brew "opentofu"             # tofu: open-source Terraform fork (homelab-infra)
@@ -51,6 +53,7 @@ brew "dnsmasq"              # Resolves *.test to this Mac
 brew "mkcert"               # Locally trusted certificates
 
 # Apps
+cask "claude-code"          # Claude Code CLI (claude); agent-bootstrap needs it
 cask "codex"                # Codex CLI (codex)
 cask "t3-code@nightly"      # T3 Code, the agent GUI
 cask "secretive"            # SSH keys in the Secure Enclave (auth + commit signing)
