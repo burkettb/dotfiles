@@ -28,6 +28,7 @@ The difference to aim for in any report back to Brandon:
 
 - Documentation: only when asked. Short, factual, no marketing tone. Never create standalone .md files to capture one-time explanations; say it in the chat response instead.
 - Anything another person will read (Teams, PR/MR, tickets, email): use the write-like-me skill. It must read like Brandon typed it: casual, short, imperfect is fine.
+- Every PR/MR description opens with a plain-language **Why** (the problem and why Brandon should care) and **What** (what the PR does), before any detail. write-like-me has the template.
 
 ## Questions are read-only
 
