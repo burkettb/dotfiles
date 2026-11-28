@@ -1,9 +1,12 @@
 # Brandon's Dotfiles
 
-macOS development environment. The repo lives at `~/.dotfiles`, `home/` mirrors
-`$HOME`, and `install.sh` symlinks each file into place. Editing `~/.zshrc` edits
-`home/.zshrc`, so there's no apply step: commit from `~/.dotfiles`, `git pull` on
-the other machine, done.
+macOS development environment for three Macs. `home/` mirrors `$HOME`, and
+`install.sh` symlinks each file into place from `~/.dotfiles`, the live copy.
+Nobody edits `~/.dotfiles`: every change goes through a branch and PR in a
+second clone, `~/dev/dotfiles`. After a merge, every Mac shows that it's behind
+main within 15 minutes, and nothing changes until you review the new commits
+and run `dotsync --apply` there. Run `dotsync --install-agent` once per Mac to
+start the background check.
 
 ## New machine setup
 
@@ -53,12 +56,12 @@ Never run `chezmoi apply` after pulling this layout.
 
 | Task | Command |
 | --- | --- |
-| Edit a dotfile | Edit it where it is (`~/.zshrc`) or in `~/.dotfiles/home/`; same file |
-| Track a new dotfile | Move it into `~/.dotfiles/home/` at the same path, then `./install.sh` |
-| Rename or delete a dotfile | Do it in `home/`, then `./install.sh` (removes the stale link) |
-| See what needs attention | The tmux status bar (e.g. `dotfiles ●1 ↓2`, empty when all is well), every new terminal, or `dotfiles-status`: links to update, uncommitted edits, a non-main branch, commits to pull or push |
-| Check every link is in place | `./install.sh --check` |
-| Get changes from the other machine | Automatic: a shell prompt runs `dotsync --quiet` in the background at most every 15 minutes, which fast-forwards main and relinks when there are no local edits or commits. Run `dotsync` to do it now and see what's blocking it. Background updates are logged in `~/.local/state/dotfiles/sync.log` |
+| Edit, add, rename or delete a dotfile | On a branch in `~/dev/dotfiles/home/`, then a PR. Never in `~/.dotfiles` or through a link like `~/.zshrc` |
+| Start the background check (once per Mac) | `dotsync --install-agent`. A LaunchAgent fetches main every 15 minutes and never applies anything; `dotsync --uninstall-agent` removes it |
+| See what needs attention | The tmux status bar (e.g. `dotfiles ↓2`, empty when all is well), every new terminal, every new Claude session, or `dotfiles-status`: commits behind main, links to update, uncommitted edits, a non-main branch, fetches failing |
+| Apply merged changes | Review `git -C ~/.dotfiles log -p HEAD..origin/main` (or ask an agent if it's safe), then `dotsync --apply`. It fast-forwards only what was already fetched, then fixes links. `dotsync --apply <sha>` stops at a commit you reviewed |
+| Check GitHub now | `dotsync` or `prefix u` in tmux: fetches and lists what's waiting, changes nothing. Fetches and failures are logged in `~/.local/state/dotfiles/sync.log` |
+| Check every link is in place | `~/.dotfiles/install.sh --check` |
 | Install/repair agent plugins | `agent-bootstrap` |
 | Verify agent configuration | `agent-doctor` |
 
@@ -114,7 +117,10 @@ file by file, so `~/.claude` and `~/.codex` keep their own runtime files.
 - **Neovim plugins**: `:lua vim.pack.update()` updates them; versions are
   pinned in `home/.config/nvim/nvim-pack-lock.json`.
 - **A file stopped updating**: an app replaced the link with a copy. Run
-  `./install.sh --check`, compare the copy in the backup folder, then `./install.sh`.
+  `~/.dotfiles/install.sh --check` to find it, then `~/.dotfiles/install.sh`,
+  which moves the copy to `~/.dotfiles-backup/<timestamp>/` and relinks. Diff
+  the backup against `~/.dotfiles/home/` and carry anything worth keeping over
+  in a PR.
 
 ## Agent configuration
 
