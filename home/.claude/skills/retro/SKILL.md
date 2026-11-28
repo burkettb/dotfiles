@@ -1,16 +1,16 @@
 ---
 name: retro
-description: Mine recent Claude Code and Codex sessions for friction and repetition, then propose reviewable improvements to Brandon's agent config in ~/.dotfiles. Manual only, because it reads personal session history across both agents; run via /retro or when Brandon explicitly says retro.
+description: Mine recent Claude Code and Codex sessions for friction and repetition, then propose reviewable improvements to Brandon's agent config in ~/dev/dotfiles. Manual only, because it reads personal session history across both agents; run via /retro or when Brandon explicitly says retro.
 disable-model-invocation: true
 ---
 
 # Retro
 
-Turn recent agent usage into durable config improvements. The deliverable is a findings report plus proposed diffs to `~/.dotfiles/home/`. Those files are linked into `~/.claude` and `~/.codex`, so an edit there is live immediately: never apply a proposal Brandon hasn't approved.
+Turn recent agent usage into durable config improvements. The deliverable is a findings report plus proposed diffs to `~/dev/dotfiles/home/`, the dev clone. `~/.claude` and `~/.codex` link into the live checkout `~/.dotfiles`, which nobody edits; a change reaches it only after its PR merges and Brandon pulls. Never apply a proposal Brandon hasn't approved.
 
 ## Scope
 
-Default window: since the last run recorded in `~/.dotfiles/.devcenter/retro-log.md`, or 14 days if the log doesn't exist. Sources:
+Default window: since the last run recorded in `~/dev/dotfiles/.devcenter/retro-log.md`, or 14 days if the log doesn't exist. Sources:
 
 - `~/.claude/history.jsonl`: every prompt Brandon typed, with project cwd
 - `~/.claude/projects/*/`: session transcripts (`*.jsonl`) and `memory/` feedback entries
@@ -32,10 +32,10 @@ These files are large. Sample and grep; don't read transcripts end to end. Promp
 
 Report findings first: each with evidence (counts, short quotes, which projects), ranked by how often it burned time. Skip anything seen once; one occurrence is an anecdote, not a pattern.
 
-Then proposals, grouped by destination: `home/.claude/CLAUDE.md` (shared by Claude and Codex), `home/.claude/skills/`, `home/.claude/settings.json`, project memory, or DevCenter standards. Show the exact diff for each and wait for Brandon to pick. Apply approved ones in `~/.dotfiles` and leave the working tree uncommitted for review. A new skill folder needs `~/.dotfiles/install.sh` once to link it.
+Then proposals, grouped by destination: `home/.claude/CLAUDE.md` (shared by Claude and Codex), `home/.claude/skills/`, `home/.claude/settings.json`, project memory, or DevCenter standards. Show the exact diff for each and wait for Brandon to pick. Apply approved ones in `~/dev/dotfiles` on a branch from `origin/main` (`chore/retro-<date>`), one commit per logical change under the repo's commit rules, then push and open one PR and stop. Don't merge. A new skill folder also needs `./install.sh` run in `~/.dotfiles` after Brandon pulls the merge; say so in the PR.
 
 ## Pruning mandate
 
 Every run must also propose removals: defaults lines no session exercised, skills never triggered, memories that went stale, rules the model already follows without being told. Config that only grows degrades instruction-following. If a run adds lines to agent-defaults, look twice as hard for lines to cut.
 
-Finish by appending a dated two-line summary (window covered, what was proposed/adopted) to `~/.dotfiles/.devcenter/retro-log.md`.
+Finish by appending a dated two-line summary (window covered, what was proposed/adopted) to `~/dev/dotfiles/.devcenter/retro-log.md`. That folder is DevCenter sidecar memory, not tracked by the repo, so the log stays out of the PR; `devcenter sync` publishes it.

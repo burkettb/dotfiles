@@ -1,11 +1,11 @@
 ---
 name: catchup
-description: Rebuild where a project stands after time away, from DevCenter tasks and context, local git state, CI, open PRs/MRs, and what the last few threads left unfinished. Ends with Brandon's action items. Use when Brandon asks for the status of a repo or project, what's left, where he left off, what he needs to do, or says it's been a while since he touched something. Read-only.
+description: Rebuild where a project stands after time away, from DevCenter tasks and context, local git state, CI, open PRs/MRs, and what the last few threads left unfinished. Ends with Brandon's action items. Use when Brandon asks for the status of a repo or project, what's left, where he left off, what he needs to do, or says it's been a while since he touched something. Read-only apart from git fetch.
 ---
 
 # Catch up
 
-Brandon is coming back to a project and wants to know where it stands and what's his to do, in about a minute of reading. Gather state from every place it lives, check the sources against each other, and report. Read-only: change nothing in his work or in DevCenter, and offer fixes at the end.
+Brandon is coming back to a project and wants to know where it stands and what's his to do, in about a minute of reading. Gather state from every place it lives, check the sources against each other, and report. Read-only apart from `git fetch`: change nothing in his work or in DevCenter, and offer fixes at the end.
 
 ## 1. Pick the scope
 
@@ -20,7 +20,9 @@ Run independent reads in parallel. Any source can be stale; step 3 deals with th
 - Local git: `git status -sb`, `git worktree list`, `git log --oneline -15` on the default branch, and every local branch with its last commit and upstream drift: `git for-each-ref --sort=-committerdate refs/heads --format='%(refname:short) %(committerdate:short) %(upstream:track)'`. Take the default branch from `git symbolic-ref refs/remotes/origin/HEAD`; if that points at a deleted branch, ask the host (`gh repo view -R <owner/repo> --json defaultBranchRef`). For each stash, list its files with `git stash show --include-untracked --name-only stash@{N}`. A stash is often the only copy of work that "vanished".
 - CI: what's live comes from the last deploys, not the task list. `gh run list -R <owner/repo> --limit 10`; when a run on the default branch or a tag failed overall, `gh run view <id> -R <owner/repo> --json jobs` shows whether the deploy job itself passed. On GitLab, `glab ci list`.
 - PRs/MRs: on GitHub, `gh pr list -R <owner/repo> --author @me` and `gh pr list -R <owner/repo> --search review-requested:@me`; on GitLab, `glab mr list --author=@me` and `glab mr list --reviewer=@me`. Run every `gh`, `glab`, and `git fetch` as a standalone command, not chained after `cd`, so it falls under the sandbox exclusions. GitLab unreachable or 403: run `vpncheck`, report it, and continue without MR data. If `gh` can't see the repo, name the active account from `gh auth status` and continue. Don't switch accounts.
-- Past threads, when the app's session tools are available (load them through ToolSearch): `list_sessions` with `include_archived: true` (inactive threads auto-archive after 14 days), filtered to sessions whose cwd is this repo or its parent folder. Then `search_session_transcripts` with `include_archived: true` on distinctive terms (task IDs, branch and tag names, file names), not the repo name, which also matches the project list in every system prompt. For the 2 or 3 most relevant threads, `list_events` with a limit of about 20; if the tail is wordsmithing or chatter, page back with `before_uuid` until you reach the last real conclusion and anything it left for Brandon.
+- Past threads. Load the thread tools through ToolSearch and use whichever set the host has; skip this source, and say so in the report, only when neither loads. In both, search on distinctive terms (task IDs, branch and tag names, file names), not the repo name, which also matches the project list in every system prompt, and stop paging once you reach a thread's last real conclusion and anything it left for Brandon; a tail of wordsmithing or chatter isn't it.
+  - T3 Code (`t3_thread_*`, Brandon's usual host): `t3_thread_list` for this repo's project, once as is and once with `settled: true`, since settled threads drop out of the default list. `t3_thread_search` covers only active threads. For the 2 or 3 most relevant threads, `t3_thread_read` with a limit of about 20 messages, paging back with `beforePosition`.
+  - Claude desktop app (`list_sessions` and friends): `list_sessions` with `include_archived: true` (inactive threads auto-archive after 14 days), filtered to sessions whose cwd is this repo or its parent folder, then `search_session_transcripts` with `include_archived: true`. For the 2 or 3 most relevant threads, `list_events` with a limit of about 20, paging back with `before_uuid`.
 
 ## 3. Reconcile
 

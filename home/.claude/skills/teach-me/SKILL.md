@@ -18,7 +18,7 @@ Explain what a thing is, how it works, and why it's built that way, at Brandon's
 
 ## Diagrams
 
-For anything with three or more moving parts, never draw one diagram with everything at once. Draw a short series where each diagram redraws the last and adds exactly one part, so he watches the system assemble. To teach a flow from A to B to C: draw A to B, then redraw adding C, then redraw adding the return edge. Mermaid for flows and structure. A single simple point needs no figure; a diagram earns its place by teaching, not decorating.
+For anything with three or more moving parts, never draw one diagram with everything at once. Draw a short series where each diagram redraws the last and adds exactly one part, so he watches the system assemble. To teach a flow from A to B to C: draw A to B, then redraw adding C, then redraw adding the return edge. In chat, draw ASCII diagrams in a code block; T3 chat and terminals may not render Mermaid. Use Mermaid only inside a file whose viewer renders it, such as a Markdown doc on GitHub. A single simple point needs no figure; a diagram earns its place by teaching, not decorating.
 
 ## Quiz mode
 
