@@ -28,31 +28,33 @@ ask_raw() {
 command -v jq >/dev/null 2>&1 || ask_raw "guard-bash.sh can't find jq, so none of its rules ran on this command. Check it by hand; fix with brew install jq."
 
 input=$(cat)
+[ -n "$input" ] || ask_raw "guard-bash.sh got no hook input, so none of its rules ran. Check this command by hand."
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null) ||
   ask_raw "guard-bash.sh couldn't parse the hook input, so none of its rules ran. Check this command by hand."
 off=$(printf '%s' "$input" | jq -r '.tool_input.dangerouslyDisableSandbox // false' 2>/dev/null) || off=false
 cwd=$(printf '%s' "$input" | jq -r '.cwd // ""' 2>/dev/null) || cwd=""
 [ -n "$cmd" ] || exit 0
 
-decide() {
+decide() { # if jq can't encode the verdict, exit 2 blocks the call instead of allowing it
   jq -cn --arg d "$1" --arg r "$2" \
-    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:$d,permissionDecisionReason:$r}}'
+    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:$d,permissionDecisionReason:$r}}' ||
+    { printf 'guard-bash.sh (%s): %s\n' "$1" "$2" >&2; exit 2; }
   exit 0
 }
 
 # Matching copies of the command. Newlines become " ; " so each line is its own
 # command. flat drops quotes, backslashes and braces, so "$HOME"/.aws, ${HOME}/.aws
 # and ~/".aws" all read as $HOME/.aws. cmdpos also unwraps sh -c / eval bodies and
-# blanks quoted strings that contain spaces (commit messages, search patterns), so
-# a tool named in prose doesn't count as running it.
+# blanks quoted strings that contain spaces or separators (commit messages, search
+# patterns like 'a|b'), so a tool named in prose doesn't count as running it.
 nl=$'\n'
 one=${cmd//$nl/ ; }
 flat=$(printf '%s' "$one" | tr -d "\"'\\\\{}")
 cmdpos=$(printf '%s' "$one" | sed -E \
   -e "s/(^|[^[:alnum:]_-])(-c|eval)[[:space:]]+\"([^\"]*)\"/\1\2 ; \3 ;/g" \
   -e "s/(^|[^[:alnum:]_-])(-c|eval)[[:space:]]+'([^']*)'/\1\2 ; \3 ;/g" \
-  -e "s/\"[^\"]*[[:space:]][^\"]*\"/_/g" \
-  -e "s/'[^']*[[:space:]][^']*'/_/g" | tr -d "\"'\\\\{}")
+  -e "s/\"[^\"]*[[:space:];&|()<>][^\"]*\"/_/g" \
+  -e "s/'[^']*[[:space:];&|()<>][^']*'/_/g" | tr -d "\"'\\\\{}")
 
 # 1. credential stores and key operations.
 #    Paths: every spelling of a home directory ($HOME, ~, ~user, /Users/x) becomes
@@ -123,7 +125,7 @@ hit=$(cred_path)
 
 #    Key and token dumps count only in command position, so a commit message or a
 #    search pattern that names one passes.
-at='(^|[;&|(`]|\$\()[[:space:]]*((([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)|sudo|env|exec|command|builtin|nohup|time|xargs|then|do|else|!)[[:space:]]+(-[^[:space:]]+[[:space:]]+)*)*([^[:space:];&|]*/)?'
+at='(^|[;&|(`]|\$\()[[:space:]]*((([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*)|sudo|env|exec|command|builtin|nohup|time|xargs|if|elif|then|else|while|until|do|!)[[:space:]]+(-[^[:space:]]+[[:space:]]+)*)*([^[:space:];&|]*/)?'
 keyop='(ssh-add([[:space:];&|)]|$)|ssh-keygen([[:space:]]+[^;&|]*)?[[:space:]]+-[A-Za-z]*y|security[[:space:]]+((find|dump)-|export)|aws[[:space:]]+configure[[:space:]]+(export-credentials|get[[:space:]]+[^;&|]*(secret|token|key))|gh[[:space:]]+auth[[:space:]]+(token|status[^;&|]*(-t|--show-token)))'
 if printf '%s' "$cmdpos" | grep -Eq "$at$keyop"; then
   decide deny "Key or token operation (ssh-add, ssh-keygen -y, security find/dump/export, aws configure export-credentials/get, gh auth token). These are denied on purpose; ask Brandon to run it himself."
@@ -157,21 +159,35 @@ if printf '%s' "$cmdpos" | grep -Eq '\bgh[[:space:]]+(repo[[:space:]]+(delete|ed
   ghask "gh repo/secret/variable/release change"
 fi
 if printf '%s' "$cmdpos" | grep -Eq '\bgh[[:space:]]+api\b'; then
-  if printf '%s' "$flat" | grep -Eq '(^|[[:space:]])graphql([[:space:]]|$)'; then
-    printf '%s' "$flat" | grep -Eiq 'mutation|--input|=@|\$\(' && ghask "gh api graphql mutation"
-  elif printf '%s' "$flat" | grep -Eiq '(-X|--method)[[:space:]=]*(PUT|POST|PATCH|DELETE)'; then
-    ghask "gh api write"
-  elif printf '%s' "$flat" | grep -Eq '(^|[[:space:]])(-[fF]|--field|--raw-field|--input)' &&
-    ! printf '%s' "$flat" | grep -Eiq '(-X|--method)[[:space:]=]*GET'; then
-    ghask "gh api with fields defaults to POST"
-  fi
+  printf '%s' "$flat" | grep -Eiq '(-X|--method)[[:space:]=]*(PUT|POST|PATCH|DELETE)' && ghask "gh api write"
+  # endpoints: the first positional word after each "gh api", skipping flag values
+  eps="" gh=false api=false skipv=false
+  for w in $flat; do
+    if $api; then
+      if $skipv; then skipv=false; continue; fi
+      case $w in
+        -X | --method | -H | --header | -f | -F | --field | --raw-field | --input | -q | --jq | -t | --template | --hostname | -p | --preview | --cache) skipv=true ;;
+        -*) ;;
+        *) eps="$eps $w"; api=false ;;
+      esac
+      continue
+    fi
+    case $w in gh) gh=true ;; api) $gh && api=true; gh=false ;; *) gh=false ;; esac
+  done
+  case $eps in
+    " graphql") printf '%s' "$flat" | grep -Eiq 'mutation|--input|=@|\$\(' && ghask "gh api graphql mutation" ;;
+    *) printf '%s' "$flat" | grep -Eq '(^|[[:space:]])(-[fF]|--field|--raw-field|--input)' &&
+      ! printf '%s' "$flat" | grep -Eiq '(-X|--method)[[:space:]=]*GET' &&
+      ghask "gh api with fields defaults to POST" ;;
+  esac
 fi
 
 # 5. risky pushes ask; a push to a feature branch falls through. Covers every
 #    spelling (git push, git -C <dir> push, cd <dir> && git push, quoted refs).
 #    Risky means: main/master or the default branch of the named remote or origin,
 #    force, delete, tags (--tags, --follow-tags, push.followTags), --all or
-#    --mirror, a bare push while on a default branch, or a push the hook can't read.
+#    --mirror, a bare push while on a default branch, a remote with
+#    remote.<name>.push set or no known default branch, or a push the hook can't read.
 if printf '%s' "$flat" | grep -Eq '\bgit( +(-[Cc] +[^ ]+|--[a-z-]+(=[^ ]+)?))* +push\b'; then
   risky() { decide ask "Risky push: $1. Brandon approves pushes to the default branch, force pushes, deletes and tag pushes himself; quote where he said to."; }
   printf '%s' "$rest" | grep -Eq "$compound" && risky "push inside a compound command"
@@ -207,12 +223,17 @@ if printf '%s' "$flat" | grep -Eq '\bgit( +(-[Cc] +[^ ]+|--[a-z-]+(=[^ ]+)?))* +
   g() { git -C "$dir" "$@" 2>/dev/null; }
   [ "$(g config --bool push.followTags)" = true ] && risky "push.followTags is on"
   cur=$(g symbolic-ref --short HEAD)
-  [ -n "$remote" ] || remote=$(g config "branch.$cur.pushRemote" || g config remote.pushDefault || g config "branch.$cur.remote")
+  [ -n "$remote" ] || remote=$(g config "branch.$cur.pushRemote" || g config remote.pushDefault || g config "branch.$cur.remote" || echo origin)
   defs=""
-  for rm in ${remote:+"$remote"} origin; do
+  for rm in "$remote" origin; do
     d=$(g symbolic-ref --short "refs/remotes/$rm/HEAD") && defs="$defs ${d#"$rm"/}"
   done
+  g symbolic-ref -q "refs/remotes/$remote/HEAD" >/dev/null ||
+    risky "default branch of $remote unknown here (git remote set-head $remote -a fixes that)"
   is_main() { case $1 in main | master) return 0 ;; esac; for d in $defs; do [ "$1" = "$d" ] && return 0; done; return 1; }
+  # remote.<name>.push can map a bare push or a refspec without :dst anywhere
+  conf=$(g config --get-all "remote.$remote.push") &&
+    risky "remote.$remote.push is set ($(printf '%s' "$conf" | tr '\n' ' ' | sed 's/ $//'))"
   if [ ${#refs[@]} -eq 0 ]; then
     [ -n "$cur" ] || risky "bare push with no branch checked out in ${dir:-the working directory}"
     is_main "$cur" && risky "bare push from $cur"

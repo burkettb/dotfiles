@@ -56,6 +56,14 @@ check ask  fix/x "git -c push.followTags=true push origin fix/x"
 check ask  fix/x "git push origin v1.0"
 check ask  fix/x "git push upstream trunk"
 check ask  fix/x "git push upstream HEAD:trunk"
+git -C "$repo" config remote.upstream.push HEAD:trunk
+check ask  fix/x "git push upstream"
+check ask  fix/x "git push upstream fix/x"
+git -C "$repo" config --unset remote.upstream.push
+git -C "$repo" remote add nohead "$tmp/upstream.git"
+check ask  fix/x "git push nohead trunk"
+check ask  fix/x "git push nohead fix/x"
+git -C "$repo" remote remove nohead
 check ask  fix/x "git add . && git push"
 check ask  main  "git push"
 check ask  main  "git push -u origin HEAD"
@@ -93,6 +101,8 @@ check deny fix/x 'security find-generic-password -s x -w'
 check deny fix/x 'security dump-keychain'
 check deny fix/x 'bash -c "ssh-add -L"'
 check deny fix/x 'true && /usr/bin/ssh-add -L'
+check deny fix/x 'if ssh-add -l; then echo y; fi'
+check deny fix/x 'while ssh-keygen -y -f key; do break; done'
 check deny fix/x 'aws configure export-credentials'
 check deny fix/x 'aws configure get aws_secret_access_key'
 check deny fix/x 'gh auth token'
@@ -103,6 +113,8 @@ check none fix/x 'cat ~/.ssh/known_hosts'
 check none fix/x 'cat ~/.aws/config'
 check none fix/x 'ls ~/dev/*'
 check none fix/x 'rg -n "ssh-add" README.md'
+check none fix/x "rg 'ssh-keygen|ssh-add' README.md"
+check none fix/x 'grep -E "x;ssh-add" notes.txt'
 check none fix/x 'git commit -m "docs: explain ssh-add"'
 check none fix/x 'git commit -m "docs: never run ssh-keygen -y; use the agent"'
 check none fix/x 'ssh-keygen -Y sign -n git -f key.pub msg'
@@ -125,7 +137,11 @@ check ask  fix/x 'gh repo archive o/r'
 check ask  fix/x 'gh secret set FOO'
 check ask  fix/x 'gh release create v1.0'
 check ask  fix/x 'gh release delete v1.0'
+check ask  fix/x 'gh api -H X-Note:graphql repos/o/r/merges -f base=main -f head=fix/x'
+check ask  fix/x 'gh api repos/o/r/merges -f base=main -f note=graphql'
+check ask  fix/x 'gh api -H Accept:x graphql -X POST -f query=x'
 check none fix/x 'gh api repos/o/r/pulls'
+check none fix/x 'gh api -H Accept:application/json graphql -f query=viewer'
 check none fix/x 'gh api -X GET search/issues -f q=repo:o/r'
 check none fix/x "gh api graphql -f query='query { viewer { login } }'"
 check none fix/x 'gh pr view 12'
@@ -138,5 +154,15 @@ got=$(printf '%s' '{"tool_input":{"command":"git push origin main"}}' | PATH="$t
 if [ "$got" = ask ]; then echo "ok    ask  no jq on PATH"; else echo "FAIL  want ask got ${got:-none}  no jq on PATH"; fail=1; fi
 got=$(printf 'not json' | "$hook" | jq -r '.hookSpecificOutput.permissionDecision')
 if [ "$got" = ask ]; then echo "ok    ask  unparseable input"; else echo "FAIL  want ask got ${got:-none}  unparseable input"; fail=1; fi
+got=$(printf '' | "$hook" | jq -r '.hookSpecificOutput.permissionDecision')
+if [ "$got" = ask ]; then echo "ok    ask  empty input"; else echo "FAIL  want ask got ${got:-none}  empty input"; fail=1; fi
+# a jq that parses input but can't encode the verdict: the hook must block (exit 2)
+mkdir "$tmp/badjq"
+printf '#!/bin/sh\ncase "$*" in *-cn*) exit 5 ;; esac\nexec %s "$@"\n' "$(command -v jq)" > "$tmp/badjq/jq"
+chmod +x "$tmp/badjq/jq"
+sed "s|^export PATH=.*|export PATH=\"$tmp/badjq:\$PATH\"|" "$hook" > "$tmp/badjq/hook"
+jq -cn '{tool_input:{command:"git push origin main"},cwd:"/"}' | /bin/bash "$tmp/badjq/hook" >/dev/null 2>&1
+rc=$?
+if [ "$rc" = 2 ]; then echo "ok    exit 2  verdict encoding fails"; else echo "FAIL  want exit 2 got $rc  verdict encoding fails"; fail=1; fi
 
 exit $fail
