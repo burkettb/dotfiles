@@ -1,6 +1,6 @@
 ---
 name: write-like-me
-description: Draft outward-facing text in Brandon's voice: Teams/Slack messages, PR/MR descriptions, tickets, commit-adjacent summaries, emails, or anything another person will read. Use whenever asked to write, draft, reword, or summarize something for someone else.
+description: "Draft outward-facing text in Brandon's voice: Teams/Slack messages, PR/MR descriptions, tickets, commit-adjacent summaries, emails, or anything another person will read. Use whenever asked to write, draft, reword, or summarize something for someone else."
 ---
 
 # Write like Brandon
@@ -42,7 +42,35 @@ Everything drafted for another human should read like Brandon typed it quickly b
 
 **Teams/Slack messages:** a few sentences of prose. Assume the reader has zero prior context unless Brandon says otherwise, and calibrate detail to the audience: a devops person doesn't get line numbers, a PM doesn't get internals. Link MRs/PRs as hyperlinked text. If merge order matters, say it. Don't mention deviations, internal process, or how the work was done.
 
-**PR/MR descriptions:** look at the repo's recent PRs first and match their length and shape; most of Brandon's repos use short ones. A few sentences: what changed and why, anything the reviewer should know, how it was tested if non-obvious. No section scaffolding unless the repo's existing PRs use it. Update the description if later commits change the story.
+**PR/MR descriptions:** write for a reviewer opening it cold, a week later, maybe on a phone. Every description starts with the same two lines, so the reader knows why they should care and what they're approving before any detail:
+
+```markdown
+**Why:** the problem or goal in plain words, from the user's side. What's broken, annoying, risky, or missing today, and what gets better. One or two sentences, no file names or jargon.
+
+**What:** what this PR does, in one or two plain sentences. Behavior, not files.
+
+### Changes
+- the notable changes, file and command names fine here; skip the trivial ones
+
+### Before / after
+| Before | After |
+|---|---|
+| screenshot or output | screenshot or output |
+
+### Testing
+What was actually run and what it showed. Say what wasn't verified.
+
+### Heads up
+Anything the reviewer has to decide, do after merge, or watch for: merge order, manual steps, risk, breaking changes, follow-ups left out.
+```
+
+- Why and What are required on every PR, even a one-liner. Write them so someone who has never seen the repo gets it. "Why" is the reason, not a restatement of the change: "tmux copy on argo never reached my laptop's clipboard" beats "fix osc52 copy".
+- The sections under them are optional. Drop any that would be empty; never write "N/A". A small PR can be Why, What, and one Testing line.
+- Before / after is for anything visual: UI, terminal output, a prompt, a status line. Use screenshots when you can take them, a short output block for CLI changes. If the tooling can't upload images (`gh` can't), say so there and give Brandon the screenshot paths in chat so he can drop them in.
+- The whole thing should read in under a minute. If Changes runs past about eight bullets, the PR is too big or the detail belongs in commit messages.
+- Headings and bullets are fine here, the voice rules still apply inside them: plain words, casual, written like Brandon typed it.
+- If the repo has its own PR/MR template, fill in its sections, but keep Why and What at the very top.
+- Update the description when later commits change the story.
 
 **Tickets:** title in the tracker's existing style, a short plain description of the problem and expected behavior, and testing steps if relevant. Write what a teammate filing it quickly would write.
 
