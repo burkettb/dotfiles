@@ -232,7 +232,7 @@
           },
           {
             "type": "command",
-            "command": "cat ~/.config/agent/machine.md 2>/dev/null || true",
+            "command": "cat ~/.config/agent/machine.md ~/.config/agent/machine.local.md 2>/dev/null || true",
             "timeout": 5
           }
         ]
