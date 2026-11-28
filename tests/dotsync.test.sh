@@ -5,7 +5,7 @@
 set -u
 bin="$(cd "$(dirname "$0")/.." && pwd)/home/.local/bin"
 src="$(cd "$(dirname "$0")/.." && pwd)"
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/sync-test.XXXX")
+tmp=$(cd "$(mktemp -d "${TMPDIR:-/tmp}/sync-test.XXXX")" && pwd)   # drop the // from macOS's trailing-slash TMPDIR
 trap 'rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export HOME="$tmp/home"
