@@ -229,6 +229,11 @@
             "command": "command -v devcenter >/dev/null && devcenter ensure || true",
             "timeout": 30,
             "statusMessage": "Checking DevCenter sidecar"
+          },
+          {
+            "type": "command",
+            "command": "cat ~/.config/agent/machine.md 2>/dev/null || true",
+            "timeout": 5
           }
         ]
       }
