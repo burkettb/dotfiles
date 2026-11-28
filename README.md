@@ -24,7 +24,7 @@ git clone git@github.com:burkettb/dotfiles.git ~/.dotfiles
 
 # 4. Install apps and tools
 brew bundle --global
-brew bundle --file ~/.dotfiles/Brewfile.personal   # personal Mac only
+brew bundle --file ~/.dotfiles/Brewfile.optional   # optional: pick per machine, see its header
 
 # 5. Install tmux plugin manager, then prefix + I inside tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
@@ -74,7 +74,7 @@ files or skip themselves when a folder doesn't exist:
 | Other machine-only git settings | `~/.gitconfig.local` (untracked, optional) |
 | Work-only shell setup, secrets | `~/.shell_local`, sourced at the end of `.shell_common` |
 | tmux-sessionizer folders | Roots that don't exist are skipped; override with `TMUX_SESSIONIZER_ROOTS` in `~/.shell_local` |
-| Personal-only apps | `Brewfile.personal`, run by hand |
+| Apps that vary by machine | Pick from `Brewfile.optional`, run by hand |
 | Codex config | `~/.codex/config.toml`, seeded once from `seeds/` |
 | What agents should know about this machine (headless, reached remotely) | `~/.config/agent/machine.md`, loaded by a Claude `SessionStart` hook; Codex is told to read it |
 | Agent box (full-access agents, no Seatbelt sandbox) | `sudo cp seeds/claude-agent-box.json "/Library/Application Support/ClaudeCode/managed-settings.json"`. Managed settings outrank `~/.claude/settings.json` and are root-owned, so agents can't loosen them. In `~/.codex/config.toml`, replace `default_permissions = "safe-workspace"` with `sandbox_mode = "danger-full-access"` |
@@ -96,8 +96,8 @@ files or skip themselves when a folder doesn't exist:
 | `home/.claude/` | `~/.claude/CLAUDE.md`, `settings.json`, `hooks/`, `skills/*` | Claude defaults, permissions, hooks, skills |
 | `home/.codex/` | `~/.codex/AGENTS.md`, `skills/*` | links back to the Claude files, so both agents share one set |
 | `home/.editorconfig` | `~/.editorconfig` | applies to everything under `~` |
-| `home/.Brewfile` | `~/.Brewfile` | `brew bundle --global` |
-| `Brewfile.personal` | not linked | personal-only apps |
+| `home/.Brewfile` | `~/.Brewfile` | every machine: `brew bundle --global` |
+| `Brewfile.optional` | not linked | per-machine app catalog |
 | `seeds/codex-config.toml` | copied once | see Agent configuration |
 | `claude-plugins/` | read in place | Claude folder marketplace |
 
