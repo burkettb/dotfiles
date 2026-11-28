@@ -41,8 +41,9 @@ say() { $quiet || printf '%s\n' "$*"; }
 ok() { say "ok      $1"; }
 change() { say "change  $1"; bad=$((bad + 1)); }
 manual() { say "manual  $1"; bad=$((bad + 1)); }
-run() { printf '+ %s\n' "$*"; "$@"; }
-run_sudo() { printf '+ sudo %s\n' "$*"; sudo "$@"; }
+# Failures are reported here and caught again by the check pass after --apply
+run() { printf '+ %s\n' "$*"; "$@" || { printf '  failed (exit %s)\n' "$?"; return 1; }; }
+run_sudo() { run sudo "$@"; }
 
 # pm_value <key>: the AC Power value pmset is set to (not the in-use value,
 # which caffeinate and friends can override)
@@ -52,18 +53,26 @@ pm_value() {
         $1 == k && (ac || !seen) { print $2; exit }'
 }
 
+# The host file alone isn't enough: install.sh saves it before linking, so a
+# run that stopped halfway leaves it set with links missing
 check_host() {
-    local h=""
+    local h="" first
     [[ -f $host_file ]] && IFS= read -r h < "$host_file"
     h=${h//[[:space:]]/}
-    if [[ $h == argo ]]; then
-        ok "host file says argo"
-        return
-    fi
-    if [[ $mode == apply && -x $repo/install.sh ]]; then
-        run "$repo/install.sh" --host argo || true
+    if [[ ! -x $repo/install.sh ]]; then
+        manual "no ~/.dotfiles/install.sh: clone the dotfiles to ~/.dotfiles first"
+    elif [[ $h != argo ]]; then
+        if [[ $mode == apply ]]; then
+            run "$repo/install.sh" --host argo
+        else
+            change "host file says '${h:-nothing}': ~/.dotfiles/install.sh --host argo"
+        fi
+    elif first=$("$repo/install.sh" --check 2>&1); then
+        ok "host file says argo, every dotfile linked"
+    elif [[ $mode == apply ]]; then
+        run "$repo/install.sh"
     else
-        change "host file says '${h:-nothing}': run ~/.dotfiles/install.sh --host argo"
+        change "host file says argo, but $(printf '%s\n' "$first" | head -1): ~/.dotfiles/install.sh"
     fi
 }
 
@@ -158,12 +167,13 @@ check_dotsync() {
     d=$(command -v dotsync 2>/dev/null) || { ok "dotsync not installed, skipped"; return; }
     if ! grep -q -- '--install-agent' "$d" 2>/dev/null; then
         ok "dotsync has no --install-agent yet, skipped"
-    elif launchctl print "gui/$uid/$dotsync_label" >/dev/null 2>&1; then
-        ok "dotsync agent loaded"
+    elif [[ -f $HOME/Library/LaunchAgents/$dotsync_label.plist ]] &&
+         launchctl print "gui/$uid/$dotsync_label" >/dev/null 2>&1; then
+        ok "dotsync agent installed and loaded"
     elif [[ $mode == apply ]]; then
         run dotsync --install-agent
     else
-        change "dotsync agent not loaded: dotsync --install-agent"
+        change "dotsync agent not installed or not loaded: dotsync --install-agent"
     fi
 }
 

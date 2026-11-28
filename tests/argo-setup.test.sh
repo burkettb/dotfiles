@@ -39,6 +39,18 @@ stub sudo 'printf "%s\n" "$*" >> "$state/sudo.log"'
 # The real dotsync is the only thing on PATH without --install-agent
 printf '#!/bin/bash\n# dotsync --install-agent\nprintf "installed\\n" > "$state/dotsync-loaded"\n' > "$stubs/dotsync"
 chmod +x "$stubs/dotsync"
+# ~/.dotfiles/install.sh: --check exits by $state/links, a real run by $state/install-rc
+mkdir -p "$HOME/.dotfiles" "$HOME/Library/LaunchAgents"
+cat > "$HOME/.dotfiles/install.sh" <<'EOS'
+#!/bin/bash
+if [[ ${1:-} == --check ]]; then
+    [[ ! -s $state/links ]] || { cat "$state/links"; exit 1; }
+    exit 0
+fi
+printf '%s\n' "$*" >> "$state/install.log"
+exit "$(cat "$state/install-rc" 2>/dev/null || echo 0)"
+EOS
+chmod +x "$HOME/.dotfiles/install.sh"
 export PATH="$stubs:/usr/bin:/bin"
 
 good() {
@@ -49,14 +61,16 @@ good() {
     echo true > "$state/authrestart"
     echo 0 > "$state/swu"
     printf 'disabled services = {\n\t"com.openssh.sshd" => enabled\n}\n' > "$state/disabled"
-    printf 'gui/501/com.t3tools.t3code.service = {\n\tstate = running\n}\n' > "$state/t3"
+    printf 'gui/501/com.t3tools.t3code.service = {\n\tstate = running\n\tprogram = /Users/x/.t3/runtime/versions/1.2.3-nightly/t3\n}\n' > "$state/t3"
     echo 'installed · t3@9.9.9' > "$state/t3-status"
     echo brandon > "$state/console"
     echo 100000000 > "$state/free_kb"
     : > "$state/dotfiles"
     echo 'PASS  everything' > "$state/doctor"
     echo installed > "$state/dotsync-loaded"
-    rm -f "$state/sudo.log"
+    touch "$HOME/Library/LaunchAgents/com.burkettb.dotsync.plist"
+    : > "$state/links"
+    rm -f "$state/sudo.log" "$state/install.log" "$state/install-rc"
 }
 
 fail=0
@@ -82,7 +96,7 @@ expect "no change lines" "ok      agent-doctor --profile agent-box passes" "$out
 out=$(health); rc=$?
 expect_rc "health passes when all is set" 0 "$rc"
 expect "health shows uptime" "ok    up 1d 1h" "$out"
-expect "health shows T3 version" "T3 service running (t3 v9.9.9)" "$out"
+expect "health shows T3 version" "T3 service running (1.2.3-nightly)" "$out"
 expect "health shows disk" "95 GB free" "$out"
 
 good
@@ -93,7 +107,7 @@ echo 1 > "$state/swu"
 echo 'FileVault is Off.' > "$state/fv"
 echo false > "$state/authrestart"
 printf 'gui/501/com.t3tools.t3code.service = {\n\tstate = not running\n}\n' > "$state/t3"
-rm "$state/dotsync-loaded"
+rm "$HOME/Library/LaunchAgents/com.burkettb.dotsync.plist"
 printf 'FAIL  permission hardening is missing\n' > "$state/doctor"
 out=$(setup --check); rc=$?
 expect_rc "check fails when settings are off" 1 "$rc"
@@ -105,9 +119,15 @@ expect "flags auto installs" "change  automatic macOS update installs on (1)" "$
 expect "flags FileVault" "manual  FileVault is not on" "$out"
 expect "flags authrestart" "manual  fdesetup authrestart not supported" "$out"
 expect "flags T3" "change  T3 service installed · t3@9.9.9, not running" "$out"
-expect "flags dotsync agent" "change  dotsync agent not loaded" "$out"
+expect "flags dotsync agent without a plist" "change  dotsync agent not installed or not loaded" "$out"
 expect "shows agent-doctor failures" "        FAIL  permission hardening is missing" "$out"
-[[ ! -e $state/sudo.log ]] && echo "ok    check runs no sudo" || { echo "FAIL  check ran sudo"; fail=1; }
+[[ ! -e $state/sudo.log && ! -e $state/install.log ]] && echo "ok    check runs no sudo and no install" || { echo "FAIL  check changed something"; fail=1; }
+
+echo argo > "$HOME/.config/dotfiles/host"
+echo 'not linked: ~/.zshrc' > "$state/links"
+expect "host file alone isn't enough" "change  host file says argo, but not linked: ~/.zshrc" "$(setup)"
+expect "health fails on missing links" "FAIL  dotfiles: not linked: ~/.zshrc" "$(health)"
+: > "$state/links"
 
 : > "$state/swu"
 expect "unset auto install counts as on" "installs on (not set" "$(setup)"
@@ -140,6 +160,15 @@ expect "apply prints the update sudo" "+ sudo defaults write /Library/Preference
 expect "apply rechecks" "after --apply:" "$out"
 want=$'pmset -c sleep 0\nsystemsetup -setremotelogin on\ndefaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates -bool false'
 expect_rc "sudo ran exactly those three" "$want" "$(cat "$state/sudo.log")"
+
+good
+rm "$HOME/.config/dotfiles/host"
+echo 1 > "$state/install-rc"
+echo 'not linked: ~/.zshrc' > "$state/links"
+out=$(setup --apply); rc=$?
+expect "apply runs install.sh --host argo" "+ $HOME/.dotfiles/install.sh --host argo" "$out"
+expect "apply reports the failed install" "  failed (exit 1)" "$out"
+expect_rc "a failed install fails --apply" 1 "$rc"
 
 good
 out=$(setup --apply); rc=$?
