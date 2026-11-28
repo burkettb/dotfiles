@@ -143,13 +143,19 @@ elif [[ -z $(git -C "$repo" ls-files -- "hosts/$host/") ]]; then
     info "host $host has no files under hosts/$host/, linked home/ only"
 else
     tracked "hosts/$host" "$work/host"
-    clashes=()
+    # Compared without case: macOS file systems treat .zshrc and .ZSHRC as one file
+    lower() { printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]'; }
+    clashes=() base_lower=()
     base_count=${#plan_dest[@]}
+    for ((i = 0; i < base_count; i++)); do
+        base_lower+=("$(lower "${plan_dest[i]}")")
+    done
     while IFS= read -r -d '' f; do
+        fl=$(lower "$f")
         for ((i = 0; i < base_count; i++)); do
-            b=${plan_dest[i]}
-            if [[ $f == "$b" || $f == "$b"/* || $b == "$f"/* ]]; then
-                clashes+=("hosts/$host/$f clashes with ~/$b from home/")
+            b=${base_lower[i]}
+            if [[ $fl == "$b" || $fl == "$b"/* || $b == "$fl"/* ]]; then
+                clashes+=("hosts/$host/$f clashes with ~/${plan_dest[i]} from home/")
             fi
         done
         add "$f" "$repo/hosts/$host/$f"
@@ -185,6 +191,14 @@ if ! $check && [[ -n $host_arg ]]; then
     say "saved host name $host_arg to ~/.config/dotfiles/host"
 fi
 
+repo_real=$(cd "$repo" && pwd -P)
+inside_repo() { # inside_repo <path>: its nearest existing folder resolves into the repo
+    local p=$1
+    while [[ ! -e $p && $p != / ]]; do p=$(dirname "$p"); done
+    p=$(cd "$p" && pwd -P)
+    [[ $p == "$repo_real" || $p == "$repo_real"/* ]]
+}
+
 link() {
     local rel=$1 src=$2 dest="$HOME/$1" dir aside=""
     [[ -L $dest && $(readlink "$dest") == "$src" ]] && return 0
@@ -193,6 +207,9 @@ link() {
         return 0
     fi
     dir=$(dirname "$dest")
+    if inside_repo "$dir"; then
+        die "~/$rel: a parent folder is a link into the repo; remove it and rerun"
+    fi
     mkdir -p "$dir"
     pending="$dir/.dotfiles-new.$$.$RANDOM"
     ln -s "$src" "$pending"
@@ -222,20 +239,35 @@ link() {
 }
 
 # The git email and signing key from a ~/.gitconfig this run is about to
-# replace (a chezmoi copy holds whatever email `chezmoi init` asked for)
+# replace (a chezmoi copy holds whatever email `chezmoi init` asked for). Saved
+# before any link changes, so a run that fails halfway can't lose them.
 old_email="" old_key=""
 if [[ -f $HOME/.gitconfig && ! -L $HOME/.gitconfig ]]; then
     old_email=$(git config --file "$HOME/.gitconfig" user.email 2>/dev/null || true)
     old_key=$(git config --file "$HOME/.gitconfig" user.signingkey 2>/dev/null || true)
 fi
-
-for ((i = 0; i < ${#plan_dest[@]}; i++)); do
-    link "${plan_dest[i]}" "${plan_src[i]}"
-done
+work_cfg="$HOME/.gitconfig-icfcorp"
+local_cfg="$HOME/.gitconfig.local"
+if ! $check; then
+    # Work repos take their email from ~/.gitconfig-icfcorp; without it they'd
+    # commit as the personal address
+    if [[ -d $HOME/dev-icfcorp && ! -f $work_cfg && -n $old_email &&
+          $old_email != *users.noreply.github.com ]]; then
+        printf '[user]\n\temail = %s\n' "$old_email" > "$work_cfg"
+        say "saved work email $old_email to ~/.gitconfig-icfcorp"
+    fi
+    # Commits are signed with this Mac's own key, named in ~/.gitconfig.local
+    if [[ -n $old_key && -z $(git config --file "$local_cfg" user.signingkey 2>/dev/null) ]]; then
+        git config --file "$local_cfg" user.signingkey "$old_key"
+        say "saved signing key $old_key to ~/.gitconfig.local"
+    fi
+fi
 
 # 3. Remove links from the last run that this run no longer makes: the file was
 #    renamed or deleted, or it belongs to another host. Only while the link still
-#    points where that run put it; anything else is someone else's.
+#    points where that run put it; anything else is someone else's. This runs
+#    before linking, so a folder link that became a real folder is gone before
+#    anything is created inside it.
 unlink_stale() { # unlink_stale <rel> <recorded source>
     local l="$HOME/$1"
     [[ -L $l && $2 == "$repo/"* && $(readlink "$l") == "$2" ]] || return 0
@@ -256,12 +288,19 @@ if [[ -f $manifest ]]; then
         esac
     done < "$manifest"
 fi
-# Codex skills used to be linked into ~/.codex/skills
-for l in "$HOME"/.codex/skills/*; do
-    [[ -L $l ]] || continue
-    t=$(readlink "$l")
-    [[ $t == "$repo/"* ]] || continue
-    unlink_stale ".codex/skills/${l##*/}" "$t"
+# Codex skills used to be linked into ~/.codex/skills. Skip it when it is itself
+# a link (say to ~/.agents/skills): its entries are someone else's.
+if [[ ! -L $HOME/.codex/skills ]]; then
+    for l in "$HOME"/.codex/skills/*; do
+        [[ -L $l ]] || continue
+        t=$(readlink "$l")
+        [[ $t == "$repo/"* ]] || continue
+        unlink_stale ".codex/skills/${l##*/}" "$t"
+    done
+fi
+
+for ((i = 0; i < ${#plan_dest[@]}; i++)); do
+    link "${plan_dest[i]}" "${plan_src[i]}"
 done
 if ! $check; then
     mkdir -p "$(dirname "$manifest")"
@@ -293,32 +332,17 @@ if [[ ! -e $codex_cfg && ! -L $codex_cfg ]]; then
     fi
 fi
 
-# 5. Work repos take their email from ~/.gitconfig-icfcorp; without it they'd
-#    commit as the personal address. Carry over the email chezmoi had set.
-work_cfg="$HOME/.gitconfig-icfcorp"
+# 5. Work repos need their own email, and signing needs this Mac's key
 if [[ -d $HOME/dev-icfcorp && ! -f $work_cfg ]]; then
-    if ! $check && [[ -n $old_email && $old_email != *users.noreply.github.com ]]; then
-        printf '[user]\n\temail = %s\n' "$old_email" > "$work_cfg"
-        say "saved work email $old_email to ~/.gitconfig-icfcorp"
-    else
-        flag "missing: ~/.gitconfig-icfcorp. Create it with: [user] email = <work email>"
-    fi
+    flag "missing: ~/.gitconfig-icfcorp. Create it with: [user] email = <work email>"
+fi
+if [[ -z $(git config --file "$local_cfg" user.signingkey 2>/dev/null) ]] &&
+   [[ $(git config --global --includes --get commit.gpgsign 2>/dev/null) == true ]] &&
+   [[ -z $(git config --global --includes --get user.signingkey 2>/dev/null) ]]; then
+    flag "no signing key: add [user] signingkey = ~/.ssh/<key>.pub to ~/.gitconfig.local"
 fi
 
-# 6. Commits are signed with this Mac's own key, named in ~/.gitconfig.local.
-#    Carry over the one the old ~/.gitconfig had.
-local_cfg="$HOME/.gitconfig.local"
-if [[ -z $(git config --file "$local_cfg" user.signingkey 2>/dev/null) ]]; then
-    if ! $check && [[ -n $old_key ]]; then
-        git config --file "$local_cfg" user.signingkey "$old_key"
-        say "saved signing key $old_key to ~/.gitconfig.local"
-    elif [[ $(git config --global --includes --get commit.gpgsign 2>/dev/null) == true ]] &&
-         [[ -z $(git config --global --includes --get user.signingkey 2>/dev/null) ]]; then
-        flag "no signing key: add [user] signingkey = ~/.ssh/<key>.pub to ~/.gitconfig.local"
-    fi
-fi
-
-# 7. Untracked files that hold this Mac's secrets; templates live in seeds/examples/
+# 6. Untracked files that hold this Mac's secrets; templates live in seeds/examples/
 for pair in .gitconfig.local:gitconfig.local.example .shell_local:shell_local.example; do
     [[ -e $HOME/${pair%%:*} ]] || info "no ~/${pair%%:*} (template: seeds/examples/${pair#*:})"
 done

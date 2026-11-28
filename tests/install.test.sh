@@ -7,7 +7,8 @@
 set -u
 src="$(cd "$(dirname "$0")/.." && pwd)"
 sh=${BASH:-bash}
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/install-test.XXXX")
+tmpdir=${TMPDIR:-/tmp}
+tmp=$(mktemp -d "${tmpdir%/}/install-test.XXXX")   # a trailing / would break the ~/.dotfiles check
 trap 'rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export HOME="$tmp/ho&me"                 # & would break an unescaped sed substitution
@@ -150,6 +151,43 @@ check_none "old-format manifest entry is cleaned up" .old
 check_none "old ~/.codex/skills link into the repo is removed" .codex/skills/demo
 [[ -L $HOME/.codex/skills/mine ]] && ok "other ~/.codex/skills link is kept" || no "other ~/.codex/skills link removed"
 expect "manifest stores destination and source" ".zshrc	$repo/home/.zshrc" "$(cat "$manifest")"
+rm -rf "$HOME/.codex/skills"
+ln -s "$HOME/.agents/skills" "$HOME/.codex/skills"     # aliased to the new folder
+run
+check_link "cleanup doesn't follow an aliased ~/.codex/skills" .agents/skills/demo home/.claude/skills/demo
+
+# Case only: macOS file systems treat these as one file
+put hosts/other/.ZSHRC
+git -C "$repo" add -A && commit case
+run
+expect "a clash differing only in case is refused" "hosts/other/.ZSHRC clashes with ~/.zshrc" "$out"
+check_link "and changes nothing" .zshrc home/.zshrc
+git -C "$repo" rm -q hosts/other/.ZSHRC && commit uncase
+
+# A folder link that becomes per-file host links: the old folder link must go
+# first, or the new links would be created inside the repo
+git -C "$repo" rm -q home/.config/nvim/init.lua
+put hosts/other/.config/nvim/host.lua
+git -C "$repo" add -A && commit split
+run
+expect "folder split exits 0" "0" "$rc"
+check_link "host file lands in a real folder" .config/nvim/host.lua hosts/other/.config/nvim/host.lua
+[[ ! -L $HOME/.config/nvim ]] && ok "old folder link is gone" || no "old folder link still there"
+[[ ! -e $repo/home/.config/nvim/host.lua ]] && ok "nothing written into the repo" || no "link written into the repo"
+
+# A run that fails halfway still saves the old ~/.gitconfig's signing key
+rm "$HOME/.gitconfig.local" 2>/dev/null
+printf '[user]\n\tsigningkey = ~/.ssh/k.pub\n' > "$HOME/.gitconfig"
+put home/.gitconfig '[user]'
+put home/zzz-dir/f
+git -C "$repo" add -A && commit gitconfig
+mkdir -p "$HOME/zzz-dir" && chmod 500 "$HOME/zzz-dir"
+run
+expect "a link that can't be made fails the run" "1" "$rc"
+chmod 700 "$HOME/zzz-dir"
+run
+expect "the retry succeeds" "0" "$rc"
+expect "signing key survives the failed run" "~/.ssh/k.pub" "$(git config --file "$HOME/.gitconfig.local" user.signingkey)"
 
 # Only ~/.dotfiles may run it
 mkdir -p "$tmp/clone" && cp "$repo/install.sh" "$tmp/clone/"
