@@ -101,16 +101,18 @@ fi
 
 # What Codex is allowed depends on the profile: workspace keeps the sandbox,
 # agent-box (a machine where agents run with full access on purpose) drops it.
-codex_mode=$(rg --no-filename '^\s*(default_permissions|sandbox_mode)\s*=' "$HOME/.codex/config.toml" 2>/dev/null |
-  sed -E 's/[[:space:]]+/ /g; s/^ //' | paste -sd ',' - | sed 's/,/, /g')
+# Only top-level keys count (a [profiles.x] table can set its own), comments dropped.
+codex_mode=$(awk '/^[[:space:]]*\[/ { exit }
+  { sub(/[[:space:]]*#.*/, ""); sub(/[[:space:]]*=[[:space:]]*/, " = "); gsub(/^[[:space:]]+|[[:space:]]+$/, "") }
+  /^(default_permissions|sandbox_mode) ?=/ { print }' "$HOME/.codex/config.toml" 2>/dev/null)
 case $profile in
   workspace) want='default_permissions = "safe-workspace"' ;;
   agent-box) want='sandbox_mode = "danger-full-access"|default_permissions = ":danger-full-access"' ;;
 esac
-if rg -q "^\\s*($want)\\s*\$" "$HOME/.codex/config.toml" 2>/dev/null; then
-  pass "Codex permissions match the $profile profile: $codex_mode"
+if [[ -n "$codex_mode" ]] && printf '%s\n' "$codex_mode" | rg -qx "$want"; then
+  pass "Codex permissions match the $profile profile: ${codex_mode//$'\n'/, }"
 else
-  fail "Codex permissions don't match the $profile profile: ${codex_mode:-none set}"
+  fail "Codex permissions don't match the $profile profile: ${${codex_mode//$'\n'/, }:-none set}"
 fi
 
 # The guard hook has to deny credential reads, not just exist
