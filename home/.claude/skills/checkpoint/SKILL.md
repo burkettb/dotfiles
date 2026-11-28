@@ -40,7 +40,7 @@ From the repo directory:
 
 ## 4. Rename the session
 
-If the app's session-title tool is available (`set_session_title`, loaded through ToolSearch), rename this session after its outcome, not its opening question: "Tenure bulk upload: fixed, PR #61 open" beats "Bulk upload issue". Keep it under 60 characters. Skip this step outside the desktop app.
+Rename this thread after its outcome, not its opening question: "Tenure bulk upload: fixed, PR #61 open" beats "Bulk upload issue". Keep it under 60 characters. Load the rename tool through ToolSearch: in T3 Code (Brandon's usual host) it's `t3_thread_update` with `action: "rename"` and `title`, leaving out `threadId` for this thread; in the Claude desktop app it's `set_session_title`. Skip the step, and say so in the report, only when neither loads.
 
 ## 5. Report
 
