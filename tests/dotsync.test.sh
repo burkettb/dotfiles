@@ -7,7 +7,8 @@
 set -u
 src="$(cd "$(dirname "$0")/.." && pwd)"
 bin="$src/home/.local/bin"
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/sync-test.XXXX")
+tmp=${TMPDIR:-/tmp}
+tmp=$(mktemp -d "${tmp%/}/sync-test.XXXX")   # no "//": install.sh compares paths
 trap 'chmod -R u+w "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export HOME="$tmp/home"
@@ -97,8 +98,9 @@ merge_on_github home/.sync-test-a
 before=$(head_)
 out=$(sync)
 expect "lists what's waiting" "change home/.sync-test-a" "$out"
-expect "says how to review and apply" \
-    "~/.dotfiles is 1 commit behind main: review with git -C ~/.dotfiles log -p HEAD..origin/main, then dotsync --apply" "$out"
+tip=$(git -C "$HOME/.dotfiles" rev-parse --short origin/main)
+expect "says how to review and apply, pinned" \
+    "~/.dotfiles is 1 commit behind main: review with git -C ~/.dotfiles log -p HEAD..$tip, then dotsync --apply $tip" "$out"
 expect "default run never moves HEAD" "$before" "$(head_)"
 check "default run links nothing" test ! -e "$HOME/.sync-test-a"
 expect "tmux shows commits behind" "↓1" "$(status --tmux)"
@@ -146,15 +148,25 @@ rm "$HOME/.dotfiles/home/.untracked-junk"
 merge_on_github home/.sync-test-d
 sync --quiet
 git -C "$HOME/.dotfiles" checkout -q -b experiment
+commit "$HOME/.dotfiles" home/.sync-test-branch
 expect "blocked off main" "on experiment" "$(sync --apply)"
+check "blocked apply doesn't link the branch's files" test ! -e "$HOME/.sync-test-branch"
 git -C "$HOME/.dotfiles" checkout -q main
+git -C "$HOME/.dotfiles" branch -q -D experiment
 
 commit "$HOME/.dotfiles" home/.sync-test-local
 expect "blocked when main diverged" "local commits on main" "$(sync --apply)"
 expect "tmux shows both directions" "↓1 ↑1" "$(status --tmux)"
 expect "rejects a commit not on main" "not on origin/main" "$(sync --apply HEAD)"
+check "diverged apply doesn't link local files" test ! -e "$HOME/.sync-test-local"
 git -C "$HOME/.dotfiles" reset -q --hard HEAD~1
 sync --apply >/dev/null
+printf 'dirty\n' > "$HOME/.dotfiles/home/.sync-test-a"
+rm "$HOME/.sync-test-a"
+expect "nothing new but dirty: still refuses" "uncommitted edits" "$(sync --apply)"
+check "and doesn't relink" test ! -e "$HOME/.sync-test-a"
+git -C "$HOME/.dotfiles" checkout -q -- home/.sync-test-a
+expect "nothing new, clean: relinks" "linked ~/.sync-test-a" "$(sync --apply)"
 
 # A relink that fails exits nonzero, and the next run retries it
 mkdir "$HOME/.ro"
@@ -184,6 +196,14 @@ sleep 0 & wait $!
 echo $! > "$state/lock/pid"                # a process that's gone
 expect "takes over a stale lock" "up to date" "$(sync)"
 check "releases the lock" test ! -e "$state/lock"
+mkdir "$state/lock"                        # just made, pid not written yet
+expect "a lock with no pid yet is busy" "another dotsync is running" "$(sync)"
+touch -t 202001010000 "$state/lock"        # its maker died before writing one
+expect "an old lock with no pid is stale" "up to date" "$(sync)"
+mkdir "$state/lock" "$state/lock.reclaim"
+touch -t 202001010000 "$state/lock"
+expect "one reclaimer at a time" "another dotsync is running" "$(sync)"
+rmdir "$state/lock" "$state/lock.reclaim"
 
 # Fetch failures
 git -C "$HOME/.dotfiles" remote set-url origin "$tmp/missing.git"
@@ -194,5 +214,7 @@ expect "fetch failure is logged" "fetch failed" "$(cat "$log")"
 touch -t 202001010000 "$state/last-success"
 expect "status flags stale fetches" "no successful fetch since" "$(status)"
 expect "tmux flags stale fetches" "fetch?" "$(status --tmux)"
+touch -t 202001010000 "$state/last-attempt"
+expect "status flags an agent that stopped" "LaunchAgent isn't running" "$(status)"
 
 exit $fail

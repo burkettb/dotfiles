@@ -39,32 +39,35 @@ if [[ -n $branch && $branch != main ]]; then
     marks+=("$branch")
 fi
 
-# Commits waiting either way
-if counts=$(git -C "$repo" rev-list --left-right --count 'HEAD...@{upstream}' 2>/dev/null); then
+# Commits waiting either way, against the last fetched main. The message pins
+# the commit, so applying can't pick up anything fetched after the review.
+if counts=$(git -C "$repo" rev-list --left-right --count 'HEAD...origin/main' 2>/dev/null); then
     ahead=${counts%%[[:space:]]*}
     behind=${counts##*[[:space:]]}
     if (( behind > 0 )); then
         (( behind == 1 )) && n="1 commit" || n="$behind commits"
-        notes+=("~/.dotfiles is $n behind main: review with git -C ~/.dotfiles log -p HEAD..origin/main, then dotsync --apply")
+        tip=$(git -C "$repo" rev-parse --short origin/main)
+        notes+=("~/.dotfiles is $n behind main: review with git -C ~/.dotfiles log -p HEAD..$tip, then dotsync --apply $tip")
         marks+=("↓$behind")
     fi
     if (( ahead > 0 )); then
-        notes+=("$ahead commit(s) not pushed")
+        notes+=("$ahead commit(s) not on main")
         marks+=("↑$ahead")
     fi
 fi
 
-# Background fetches: not set up on this Mac, or failing (offline, GitHub
-# down), either of which would hide new commits on main
+# Background fetches: not set up on this Mac, not running, or failing
+# (offline, GitHub down). Any of those would hide new commits on main.
 state="$HOME/.local/state/dotfiles"
+old() { [[ ! -f $1 || -n $(find "$1" -mmin +60 2>/dev/null) ]]; }
 if [[ ! -f $HOME/Library/LaunchAgents/com.burkettb.dotsync.plist ]]; then
     notes+=("nothing checks GitHub for changes. Run dotsync --install-agent once")
     marks+=("no-agent")
-elif [[ -f $state/last-attempt && ! -f $state/last-success ]]; then
-    notes+=("dotsync has never fetched. See ~/.local/state/dotfiles/sync.log")
-    marks+=("fetch?")
-elif [[ -n $(find "$state/last-success" -mmin +60 2>/dev/null) ]]; then
-    notes+=("no successful fetch since $(cat "$state/last-success"). See ~/.local/state/dotfiles/sync.log")
+elif old "$state/last-attempt"; then
+    notes+=("the dotsync LaunchAgent isn't running. Run dotsync --install-agent")
+    marks+=("no-agent")
+elif old "$state/last-success"; then
+    notes+=("no successful fetch since $(cat "$state/last-success" 2>/dev/null || echo install). See ~/.local/state/dotfiles/sync.log")
     marks+=("fetch?")
 fi
 

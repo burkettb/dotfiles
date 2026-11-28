@@ -96,21 +96,35 @@ case $mode in
 esac
 
 # One run at a time, so the LaunchAgent can't fetch while you apply. mkdir is
-# atomic; a lock whose process is gone (killed with -9) is taken over.
+# atomic. A lock is stale when its process is gone (killed with -9), or when it
+# never got a pid and is over a minute old; only one run at a time may take
+# over a stale lock, so two can't each delete the other's.
 lock="$state/lock"
-if ! mkdir "$lock" 2>/dev/null; then
+busy() {
+    say "another dotsync is running, try again in a moment"
+    $quiet && exit 0
+    exit 1
+}
+stale() {
+    local pid
     pid=$(cat "$lock/pid" 2>/dev/null)
-    if [[ -n $pid ]] && kill -0 "$pid" 2>/dev/null; then
-        say "another dotsync is running (pid $pid), try again in a moment"
-        $quiet && exit 0
-        exit 1
+    if [[ -n $pid ]]; then
+        ! kill -0 "$pid" 2>/dev/null
+    else
+        [[ -n $(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null) ]]
     fi
-    rm -rf "$lock"
-    mkdir "$lock" 2>/dev/null || { say "another dotsync is running, try again in a moment"; exit 1; }
+}
+if ! mkdir "$lock" 2>/dev/null; then
+    stale && mkdir "$lock.reclaim" 2>/dev/null || busy
+    stale && rm -rf "$lock"
+    mkdir "$lock" 2>/dev/null
+    got=$?
+    rmdir "$lock.reclaim"
+    (( got == 0 )) || busy
 fi
-printf '%s\n' "$$" > "$lock/pid"
 trap 'rm -rf "$lock"' EXIT
 trap 'exit 1' HUP INT TERM
+printf '%s\n' "$$" > "$lock/pid"
 
 export GIT_TERMINAL_PROMPT=0            # fail instead of waiting on a prompt
 
@@ -129,29 +143,31 @@ if [[ $mode == --apply ]]; then
     fi
     behind=$(git -C "$repo" rev-list --count "HEAD..$new")
     branch=$(git -C "$repo" branch --show-current)
+    # Links follow whatever is checked out, so touch nothing unless that's main
+    # as GitHub has it
     blocked=""
-    if (( behind == 0 )); then
-        say "nothing to apply"
-    elif [[ $branch != main ]]; then
-        blocked="~/.dotfiles is on $branch"
+    if [[ $branch != main ]]; then
+        blocked="~/.dotfiles is on ${branch:-a detached HEAD}"
     elif [[ -n $(git -C "$repo" status --porcelain --untracked-files=no) ]]; then
         blocked="uncommitted edits in ~/.dotfiles"
-    else
-        old=$(git -C "$repo" rev-parse HEAD)
-        if git -C "$repo" merge --ff-only --quiet "$new" 2>/dev/null; then
-            say "applied:"
-            $quiet || git -C "$repo" log --oneline --no-decorate "$old..HEAD"
-            log "applied $(git -C "$repo" rev-parse --short "$old")..$(git -C "$repo" rev-parse --short HEAD)"
-        else
-            blocked="local commits on main. Run git -C ~/.dotfiles pull --rebase"
-        fi
+    elif ! git -C "$repo" merge-base --is-ancestor HEAD origin/main; then
+        blocked="local commits on main. Run git -C ~/.dotfiles pull --rebase"
     fi
     if [[ -n $blocked ]]; then
         say "$behind new on main, not applied: $blocked"
         log "apply blocked: $blocked"
-        rc=1
+        done_ 1
     fi
-    # Always reconcile links, so a relink that failed last time is retried
+    if (( behind == 0 )); then
+        say "nothing to apply"
+    else
+        old=$(git -C "$repo" rev-parse HEAD)
+        git -C "$repo" merge --ff-only --quiet "$new" || { log "apply failed: merge"; done_ 1; }
+        say "applied:"
+        $quiet || git -C "$repo" log --oneline --no-decorate "$old..HEAD"
+        log "applied $(git -C "$repo" rev-parse --short "$old")..$(git -C "$repo" rev-parse --short HEAD)"
+    fi
+    # Reconcile links even when nothing is new, so a failed relink is retried
     if ! "$repo/install.sh" --check >/dev/null 2>&1 && ! "$repo/install.sh"; then
         say "relinking failed. Fix the error above, then run dotsync --apply again"
         log "relink failed"
