@@ -91,6 +91,59 @@ when a folder doesn't exist:
 | Which checks `agent-doctor` runs | `hosts/<name>/.config/agent/profile`: `workspace` (the default) or `agent-box`, or `agent-doctor --profile <name>` |
 | Agent box (full-access agents, no Seatbelt sandbox) | `sudo cp seeds/claude-agent-box.json "/Library/Application Support/ClaudeCode/managed-settings.json"`, and in `~/.codex/config.toml` replace `default_permissions = "safe-workspace"` with `sandbox_mode = "danger-full-access"`. Managed settings outrank `~/.claude/settings.json` and are root-owned, but with the sandbox off nothing stops an agent from editing `~/.claude/settings.json` and `hooks/` themselves, so the deny rules and guard hook there are advice, not a wall. Not installed on argo yet, pending a decision |
 
+## argo
+
+argo is the always-on Mac mini where agents run. FileVault is on and auto-login
+is off, so every restart waits at the unlock screen, and T3 (a LaunchAgent) only
+starts once the GUI session is logged in. Two commands, linked on argo only:
+
+- `argo-setup` checks the settings that keep argo reachable (no sleep, restart
+  after power loss, Remote Login, no automatic macOS installs, FileVault and
+  authrestart, T3 service, dotsync agent, `agent-doctor --profile agent-box`).
+  `argo-setup --apply` fixes what it can and prints each `sudo` command first.
+- `argo-health` says whether argo is okay right now; exit 1 means a `FAIL` line.
+  From iris: `ssh argo .local/bin/argo-health` (a bare ssh command has no
+  `~/.local/bin` on PATH).
+
+**After a power loss** argo powers back on by itself and waits at the unlock
+screen. On macOS 26+ with Apple silicon, FileVault unlocks over SSH when Remote
+Login is on and argo is on Ethernet or a known WPA2 Wi-Fi network
+([Apple](https://support.apple.com/guide/deployment/intro-to-filevault-dep82064ec40/web)).
+From iris, on the LAN:
+
+```bash
+ssh -o PubkeyAuthentication=no argo   # argo's login password; the disk is locked, so no key works yet
+# the connection drops once the disk unlocks; give it a minute to finish booting
+ssh argo .local/bin/argo-health
+```
+
+If the SSH unlock fails, or argo-health says no one is logged in to the GUI,
+screen share in from iris (`open vnc://argo`), log in, and rerun argo-health.
+
+**Planned reboot**: `sudo fdesetup authrestart` on argo, never a plain `reboot`.
+It unlocks FileVault once for the next boot. Confirm with argo-health after.
+
+**macOS updates** don't install on their own (an unattended restart would strand
+argo at the unlock screen). Install them yourself; if one restarts argo, unlock
+it over SSH as above.
+
+**Fresh argo**, in order:
+
+```bash
+# 1. Homebrew, as in New machine setup
+# 2. HTTPS, since there is no SSH key yet
+git clone https://github.com/burkettb/dotfiles.git ~/.dotfiles
+~/.dotfiles/install.sh --host argo
+brew bundle --global
+# 3. Install T3 Code, then
+argo-setup            # what's off
+argo-setup --apply    # asks for the sudo password
+# 4. Screen share in: create the Secretive key (GitHub auth + signing key,
+#    allowed_signers, ~/.gitconfig.local), then switch the remote to SSH
+git -C ~/.dotfiles remote set-url origin git@github.com:burkettb/dotfiles.git
+# 5. Sign in to T3, then rerun argo-setup until every line is ok
+```
+
 ## What's here
 
 | Repo path | Linked to | Notes |
