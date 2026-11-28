@@ -59,7 +59,7 @@ Never run `chezmoi apply` after pulling this layout.
 | Edit, add, rename or delete a dotfile | On a branch in `~/dev/dotfiles/home/`, then a PR. Never in `~/.dotfiles` or through a link like `~/.zshrc` |
 | Start the background check (once per Mac) | `dotsync --install-agent`. A LaunchAgent fetches main every 15 minutes and never applies anything; `dotsync --uninstall-agent` removes it |
 | See what needs attention | The tmux status bar (e.g. `dotfiles ↓2`, empty when all is well), every new terminal, every new Claude session, or `dotfiles-status`: commits behind main, links to update, uncommitted edits, a non-main branch, fetches failing |
-| Apply merged changes | Review `git -C ~/.dotfiles log -p HEAD..origin/main` (or ask an agent if it's safe), then `dotsync --apply`. It fast-forwards only what was already fetched, then fixes links. `dotsync --apply <sha>` stops at a commit you reviewed |
+| Apply merged changes | The status line names the commit: review `git -C ~/.dotfiles log -p HEAD..<sha>` (or ask an agent if it's safe), then `dotsync --apply <sha>`. It fast-forwards to that commit, then fixes links, and refuses to touch anything off main, with uncommitted edits, or with local commits. Without `<sha>` it applies whatever was last fetched |
 | Check GitHub now | `dotsync` or `prefix u` in tmux: fetches and lists what's waiting, changes nothing. Fetches and failures are logged in `~/.local/state/dotfiles/sync.log` |
 | Check every link is in place | `~/.dotfiles/install.sh --check` |
 | Install/repair agent plugins | `agent-bootstrap` |
