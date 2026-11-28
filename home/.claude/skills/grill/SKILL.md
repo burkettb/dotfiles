@@ -7,7 +7,7 @@ description: Interview Brandon about a plan, decision, or greenfield idea until 
 
 Interview Brandon until you reach a shared understanding. He is deciding and learning at the same time, so every question also teaches the territory.
 
-Map the work as a **design tree**: every decision branches into the decisions that hang off it. Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled, the questions you can ask now without guessing at answers you haven't heard yet. Ask the whole frontier in one numbered round, then wait.
+Map the work as a **design tree**: every decision branches into the decisions that hang off it. Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled, the questions you can ask now without guessing at answers you haven't heard yet. Ask the frontier in one numbered round, then wait. A round holds up to five questions; this overrides the global three-question cap for grill only. A frontier bigger than five goes out over consecutive rounds, most consequential first.
 
 Format each question like this:
 
@@ -17,7 +17,7 @@ Format each question like this:
 actually decides between them, in a sentence or two each. Teach here. If one
 option is what most teams in this ecosystem do, say so.>
 
-➡️ Recommended: <your pick and the one-line reason>
+Recommended: <your pick and the one-line reason>
 ```
 
 Brandon answers rounds tersely ("1 yes, 2B, 3 your call"). "Your call" means take your recommendation and move on. Settled answers push the frontier outward; recompute it and ask the next round. A question whose answer depends on another question still open in this round belongs to a later round.
