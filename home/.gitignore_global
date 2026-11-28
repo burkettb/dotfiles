@@ -60,9 +60,7 @@ jspm_packages/
 tmp/
 temp/
 
-# Claude
-.claude/
-.claude
-**/.claude/.cc-writes/
-
+# Claude: per-user files only; project .claude/ config stays trackable
+CLAUDE.local.md
 **/.claude/settings.local.json
+**/.claude/.cc-writes/
