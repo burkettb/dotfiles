@@ -1,0 +1,37 @@
+{
+  "description": "Same session-start context and Bash guard as ~/.claude/settings.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v devcenter >/dev/null && devcenter ensure || true",
+            "timeout": 30,
+            "statusMessage": "Checking DevCenter sidecar",
+            "additionalContextLimit": 0
+          },
+          {
+            "type": "command",
+            "command": "cat ~/.config/agent/machine.md ~/.config/agent/machine.local.md 2>/dev/null || true",
+            "timeout": 5,
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.codex/hooks/guard-bash.sh",
+            "timeout": 5,
+            "statusMessage": "Bash guard"
+          }
+        ]
+      }
+    ]
+  }
+}
