@@ -234,6 +234,11 @@
             "type": "command",
             "command": "cat ~/.config/agent/machine.md 2>/dev/null || true",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/.local/bin/dotfiles-status 2>/dev/null || true",
+            "timeout": 5
           }
         ]
       }
