@@ -5,13 +5,14 @@
 set -u
 bin="$(cd "$(dirname "$0")/.." && pwd)/home/.local/bin"
 src="$(cd "$(dirname "$0")/.." && pwd)"
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/sync-test.XXXX")
+tmp=$(cd "$(mktemp -d "${TMPDIR:-/tmp}/sync-test.XXXX")" && pwd)   # drop the // from macOS's trailing-slash TMPDIR
 trap 'rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export HOME="$tmp/home"
 mkdir -p "$HOME"
 
-git clone -q --bare "$src" "$tmp/remote.git"
+git init -q --bare -b main "$tmp/remote.git"
+git -C "$tmp/remote.git" fetch -q "$src" HEAD:refs/heads/main   # test this checkout, not local main
 git clone -q -b main "$tmp/remote.git" "$HOME/.dotfiles"
 "$HOME/.dotfiles/install.sh" >/dev/null
 git clone -q -b main "$tmp/remote.git" "$tmp/other"     # the other Mac, pushing changes
