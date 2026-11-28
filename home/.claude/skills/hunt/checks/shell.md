@@ -1,0 +1,8 @@
+# Shell, scripts and dotfiles checks
+
+- **shell.shellcheck**: Run `shellcheck -S warning` on tracked `*.sh` files and on scripts with a shell shebang. Finding: warnings and errors that can change behavior (unquoted expansions in paths, `cd` without a failure check, unused-but-meant-to-be-used variables). Group them into one ticket per repo. Severity: medium when they're in install or destructive scripts, otherwise low.
+- **shell.tests**: Run the repo's script tests, such as `tests/*.test.sh` or bats. Finding: failures. Severity: high.
+- **shell.destructive**: Judgment. Finding: `rm -rf`, `mv` or overwrite steps with an unguarded variable path, no confirmation or backup, or a run that isn't idempotent (running twice breaks things). Severity: high.
+- **shell.portability**: Judgment. Finding: hard-coded `/Users/<name>` paths in files meant for several machines, GNU-only flags in scripts that run on macOS (`sed -i` without `''`, `readlink -f` on older macOS, `date -d`), or bash 4 features run by macOS's `/bin/bash` 3.2. Severity: medium.
+- **shell.dotfiles-links**: Use the repo's own installer tests when it has them. Otherwise, run the installer's check mode only if it supports a temporary `HOME` from the worktree. Some installers refuse to run outside their live checkout (Brandon's dotfiles `install.sh` only runs from `~/.dotfiles`), so record those as not run. Never run an installer against the real `HOME`. Finding: links that would be broken or missing, or repo files the installer never links. Severity: medium.
+- **shell.secrets-config**: Judgment. Finding: tokens, hostnames or emails that should live in untracked local files but are committed in shared config. Severity: medium, or high for credentials (see `general.secrets`).

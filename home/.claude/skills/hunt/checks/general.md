@@ -1,0 +1,13 @@
+# General checks (every repo)
+
+Each entry has an id, what to run, the point at which it becomes a finding, and what not to file. Ids are stable because the Filed log fingerprints use them.
+
+- **general.tests-pass**: Run the repo's test command, from README, package scripts, Makefile or CI. Finding: a failing test on the default branch. Severity: high. Not a finding: no test command at all (see `general.tests-exist`).
+- **general.tests-exist**: Judgment. Finding: core logic with no tests at all, such as file moving, money, auth, sync, migrations or parsing. Name the functions. Severity: medium, or high when the code is destructive. Don't file "coverage could be higher".
+- **general.build-pass**: Run the build or typecheck the repo defines. Finding: it fails on a clean checkout. Severity: high.
+- **general.ci-main**: When there's a GitHub remote, run `gh run list --branch <default> --limit 3`. Finding: the latest run on the default branch failed, or the workflow references removed actions or runtimes. Severity: high when failing.
+- **general.secrets**: Run `gitleaks detect --no-banner --redact` if it's installed. Otherwise, only list tracked file names that look like secret stores (`git ls-files | grep -E '(^|/)\.env($|\.)|\.pem$|\.key$|\.p12$|credentials'`). Never grep or print file contents for keys. Finding: a live-looking secret, or a secret-store file that's tracked. Evidence gives `file:line` and the type only. Severity: high.
+- **general.tracked-junk**: Run `git ls-files` and look for tracked build output, `node_modules`, `.DS_Store`, `.env*`, or files over 5 MB that aren't intentional assets. Finding: any of these. Severity: low, or medium when a file is over 50 MB.
+- **general.readme-run**: Judgment, cheap. Do the README's setup and run steps still match the repo (scripts that exist, ports, env vars)? Finding: a step that can't work as written. Severity: medium.
+- **general.todo-bugs**: Grep `TODO|FIXME|HACK|XXX`. Finding: only comments that describe a real defect or a known-wrong behavior, e.g. "FIXME: drops the last item when...". Group them by area. Not a finding: wishlists or "clean this up later".
+- **general.error-handling**: Judgment on core paths. Finding: an error that gets swallowed or ignored where the user loses data or gets told something false (an empty `catch`, `try?` that discards the error, a missing await on a write). Severity: medium or high.
